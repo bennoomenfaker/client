@@ -1,0 +1,513 @@
+import { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from "react-redux";
+import { Autocomplete, Button, TextField, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
+import { toast } from "react-toastify";
+import { fetchEMDNCodes } from "../redux/slices/emdnNomenclatureSlice";
+import { fetchHospitals } from "../redux/slices/hospitalSlice";
+import { createEquipment, updateEquipment } from "../redux/slices/equipmentSlice";
+
+const riskClasses = ["1", "2a", "2b", "3"];
+
+// eslint-disable-next-line react/prop-types
+const EquipmentCreationForm = ({ initialData, onSuccess }) => {
+    const dispatch = useDispatch();
+    const hospitals = useSelector((state) => state.hospital.hospitals);
+    const emdn = useSelector((state) => state.emdnNomenclature.emdnCodeList);
+
+    const [formData, setFormData] = useState({
+        nom: initialData?.nom || "",
+        emdnCode: initialData?.emdnCode || null,
+        lifespan: initialData?.lifespan || "",
+        riskClass: initialData?.riskClass || "",
+        hospitalId: initialData?.hospitalId || ""
+    });
+    console.log(formData)
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                nom: initialData.nom || "",
+                emdnCode: initialData.emdnCode || null,
+                lifespan: initialData.lifespan || "",
+                riskClass: initialData.riskClass || "",
+                hospitalId: initialData.hospitalId || ""
+            });
+        }
+    }, [initialData]);
+
+    useEffect(() => {
+        dispatch(fetchEMDNCodes());
+        dispatch(fetchHospitals());
+    }, [dispatch]);
+
+    const handleChange = (event) => {
+        setFormData({ ...formData, [event.target.name]: event.target.value });
+    };
+    const prepareUpdateData = (data) => {
+        return {
+            nom: data.nom || "",
+            emdnCode: data?.emdnCode?.code ||"",  // Seul le dernier index est envoyé
+            lifespan: data.lifespan || 0,
+            riskClass: data.riskClass || "",
+            hospitalId: data.hospitalId || "",
+            serialNumber: data.serialNumber || "", // Assurez-vous de l'inclure
+            amount: data.amount || 0, 
+            supplier: data.supplier || "",
+            acquisitionDate: data.acquisitionDate ? new Date(data.acquisitionDate).toISOString() : null,
+            serviceId: data.serviceId || "",
+            brandName: data.brandName || "",
+            sparePartIds: data.sparePartIds?.length ? data.sparePartIds : [], 
+            slaId: data.slaId || "",
+            reception: false,
+            startDateWarranty: data.startDateWarranty ? new Date(data.startDateWarranty).toISOString() : null,
+            endDateWarranty: data.endDateWarranty ? new Date(data.endDateWarranty).toISOString() : null
+        };
+    };
+    console.log(formData)
+    
+    
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        try {
+            let response;
+            if (initialData?.id) {
+                // Mode mise à jour → Assure que les champs optionnels sont null ou []
+                const updateData = prepareUpdateData(formData);
+                console.log(prepareUpdateData)
+                response = await dispatch(updateEquipment({ id: initialData.id, formData: updateData }));
+                console.log(response,'res')
+                toast.success("Équipement mis à jour avec succès !");
+            } else {
+                // Mode création → Pas besoin de filtre
+                response = await dispatch(createEquipment(formData));
+                toast.success("Équipement créé avec succès !");
+            }
+    
+            onSuccess(response.payload.data);
+        } catch (error) {
+            console.error("Une erreur s'est produite : " + error.message);
+        }
+    };
+    
+    
+
+    const flattenEMDNHierarchy = (data) => {
+        let flatList = [];
+        const traverse = (items, parentCode = "") => {
+            items.forEach(item => {
+                const fullCode = parentCode ? `${parentCode}.${item.code}` : item.code;
+                flatList.push({ code: fullCode, nom: item.nom });
+                if (item.subtypes && item.subtypes.length > 0) {
+                    traverse(item.subtypes, fullCode);
+                }
+            });
+        };
+        traverse(data);
+        return flatList;
+    };
+
+    const flatEMDNList = flattenEMDNHierarchy(emdn);
+    const getLastIndex = (emdnCode) => {
+        console.log(emdnCode,"dd")
+        if (!emdnCode) return null;
+        const parts = emdnCode.split('.');
+        return parts[parts.length - 1];
+    };
+    
+
+    return (
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", width: "50%" }}>
+            <h1>Créer un nouvel équipement</h1>
+            <TextField label="Nom de l'équipement" name="nom" value={formData.nom} onChange={handleChange} required />
+            <Autocomplete
+    options={flatEMDNList}
+    getOptionLabel={(option) => `${option.code} - ${option.nom}`}
+    value={flatEMDNList.find(opt => opt.code.split('.').pop() === formData.emdnCode?.code) || null} 
+    onChange={(event, newValue) => {
+        // Check if newValue is valid and has a code before updating the state
+        setFormData({
+            ...formData, 
+            emdnCode: newValue ? { code: getLastIndex(newValue.code) } : null 
+        });
+    }}
+    renderInput={(params) => <TextField {...params} label="Sélectionner un code EMDN" required />}
+/>
+
+
+            <TextField label="Durée de vie (en années)" name="lifespan" type="number" value={formData.lifespan} onChange={handleChange} required />
+            <FormControl>
+                <InputLabel>Classe de risque</InputLabel>
+                <Select name="riskClass" value={formData.riskClass} onChange={handleChange} required>
+                    {riskClasses.map((risk) => (
+                        <MenuItem key={risk} value={risk}>{risk}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <FormControl>
+                <InputLabel>Hôpital</InputLabel>
+                <Select name="hospitalId" value={formData.hospitalId} onChange={handleChange} required>
+                    {hospitals.map((hospital) => (
+                        <MenuItem key={hospital.id} value={hospital.id}>{hospital.name}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <Button type="submit" variant="contained" color="primary">Créer l’équipement</Button>
+        </form>
+    );
+};
+EquipmentCreationForm.propTypes = {
+    initialData: PropTypes.shape({
+        nom: PropTypes.string,
+        emdnCode: PropTypes.string,
+        lifespan: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        riskClass: PropTypes.string,
+        hospitalId: PropTypes.string
+    }),
+    onSuccess: PropTypes.func.isRequired
+};
+
+export default EquipmentCreationForm;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const flattenEMDNHierarchy = (data) => {
+        let flatList = [];
+        const traverse = (items, parentCode = "") => {
+            items.forEach(item => {
+                const fullCode = parentCode ? `${parentCode}.${item.code}` : item.code;
+                flatList.push({ code: fullCode, nom: item.nom });
+                if (item.subtypes && item.subtypes.length > 0) {
+                    traverse(item.subtypes, fullCode);
+                }
+            });
+        };
+        traverse(data);
+        return flatList;
+    };
+
+    const flatEMDNList = flattenEMDNHierarchy(emdn);
+
+
+<Autocomplete
+                                options={flatEMDNList}
+                                getOptionLabel={(option) => `${option.code} - ${option.nom}`}
+                                value={flatEMDNList.find(opt => opt.code.split('.').pop() === equipmentFormData.emdnCode) || null}
+                                onChange={(event, newValue) => {
+                                    setEquipmentFormData({
+                                        ...equipmentFormData,
+                                        emdnCode: newValue ? newValue.code.split('.').pop() : ""
+                                    });
+                                }}
+                                renderInput={(params) => <TextField {...params} label="Sélectionner un code EMDN" required />}
+                            />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                            import NavBar from "../../../components/NavBar";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import { fetchEMDNCodes } from "../../../redux/slices/emdnNomenclatureSlice";
+import { fetchHospitals } from "../../../redux/slices/hospitalSlice";
+import { fetchEquipmentBySerial, updateEquipment, addMaintenancePlan, updateMaintenancePlanEqui } from "../../../redux/slices/equipmentSlice";
+import { updateMaintenancePlan } from '../../../redux/slices/maintenancePlanSlice ';
+import { CircularProgress, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, Autocomplete, Stepper, Step, StepLabel, Paper, Slide } from "@mui/material";
+import { toast } from "react-toastify";
+
+const riskClasses = ["1", "2a", "2b", "3"];
+
+const UpdateEquipmentByMS = () => {
+    const dispatch = useDispatch();
+    const { serialCode } = useParams();
+    const [isNavOpen, setIsNavOpen] = useState(true);
+    const [equipmentId, setEquipmentId] = useState(null);
+    const { equipment, loading, error } = useSelector((state) => state.equipment);
+    const hospitals = useSelector((state) => state.hospital.hospitals);
+    const emdn = useSelector((state) => state.emdnNomenclature.emdnCodeList);
+    const [step, setStep] = useState(0); // 0: Equipment Update, 1: Maintenance Plan
+    const navigate = useNavigate();
+
+    // State for Equipment Update Form
+    const [equipmentFormData, setEquipmentFormData] = useState({});
+    // State for Maintenance Plan Form
+    const [maintenancePlans, setMaintenancePlans] = useState([]);
+
+    useEffect(() => {
+        dispatch(fetchEMDNCodes());
+        dispatch(fetchHospitals());
+        if (serialCode) {
+            dispatch(fetchEquipmentBySerial(serialCode));
+        }
+    }, [dispatch, serialCode]);
+
+    useEffect(() => {
+        if (equipment && serialCode) {
+            setEquipmentId(equipment.id);
+            setEquipmentFormData({
+                ...equipment,
+                emdnCode: equipment.emdnCode?.code?.split('.').pop() || '',
+                riskClass: equipment.riskClass || '',
+                hospitalId: equipment.hospitalId || ''
+            });
+            if (equipment.maintenancePlans && equipment.maintenancePlans.length > 0) {
+                const formattedPlans = equipment.maintenancePlans.map(plan => ({
+                    ...plan,
+                    maintenanceDate: plan.maintenanceDate ? plan.maintenanceDate.split('T')[0] : ""
+                }));
+                setMaintenancePlans(formattedPlans);
+            } else {
+                setMaintenancePlans([{ maintenanceDate: "", description: "", equipmentId: equipment.id }]);
+            }
+        }
+    }, [equipment, serialCode]);
+
+    if (loading) {
+        return <CircularProgress />;
+    }
+
+    if (error) {
+        return <Typography color="error">{error}</Typography>;
+    }
+
+    const handleEquipmentChange = (event) => {
+        setEquipmentFormData({ ...equipmentFormData, [event.target.name]: event.target.value });
+    };
+
+    const handleEquipmentSubmit = async (event) => {
+        event.preventDefault();
+        if (!equipmentFormData.nom || !equipmentFormData.emdnCode || !equipmentFormData.lifespan || !equipmentFormData.riskClass || !equipmentFormData.hospitalId) {
+            toast.warning("Veuillez remplir tous les champs obligatoires.");
+            return;
+        }
+        try {
+            await dispatch(updateEquipment({ id: equipmentId, formData: equipmentFormData }));
+            toast.success("Équipement mis à jour avec succès !");
+            setStep(1);
+        } catch (error) {
+            console.error("Une erreur s'est produite : " + error.message);
+        }
+    };
+
+    const handleMaintenanceChange = (event, index) => {
+        const { name, value } = event.target;
+        const updatedPlans = [...maintenancePlans];
+        updatedPlans[index][name] = value;
+        setMaintenancePlans(updatedPlans);
+    };
+
+    const handleAddPlan = () => {
+        setMaintenancePlans([
+            ...maintenancePlans,
+            { maintenanceDate: "", description: "", equipmentId: equipmentId }
+        ]);
+    };
+
+    const handleRemovePlan = (index) => {
+        const updatedPlans = [...maintenancePlans];
+        updatedPlans.splice(index, 1);
+        setMaintenancePlans(updatedPlans);
+    };
+
+    const handleMaintenanceSubmit = async (event) => {
+        event.preventDefault();
+        if (maintenancePlans.some(plan => !plan.maintenanceDate || !plan.description)) {
+            toast.warning("Veuillez remplir tous les champs obligatoires pour les plans de maintenance.");
+            return;
+        }
+        try {
+            for (const plan of maintenancePlans) {
+                if (plan.id) {
+                    await dispatch(updateMaintenancePlan({
+                        equipmentId,
+                        maintenancePlanId: plan.id,
+                        newPlanDetails: plan
+                    }));
+                    await dispatch(updateMaintenancePlanEqui({
+                        equipmentId,
+                        maintenancePlanId: plan.id,
+                        newPlanDetails: { maintenanceDate: plan.maintenanceDate, description: plan.description }
+                    }));
+                } else {
+                    await dispatch(addMaintenancePlan({
+                        equipmentId,
+                        maintenancePlan: plan
+                    }));
+                }
+            }
+            toast.success("Plans de maintenance enregistrés !");
+            navigate("/manage-equipment/equipments");
+        } catch (error) {
+            console.error("Erreur lors de l'enregistrement des plans de maintenance : ", error);
+            toast.error("Erreur lors de l'enregistrement des plans de maintenance.");
+        }
+    };
+
+    const flattenEMDNHierarchy = (data) => {
+        let flatList = [];
+        const traverse = (items, parentCode = "") => {
+            items.forEach(item => {
+                const fullCode = parentCode ? `${parentCode}.${item.code}` : item.code;
+                flatList.push({ code: fullCode, nom: item.nom });
+                if (item.subtypes && item.subtypes.length > 0) {
+                    traverse(item.subtypes, fullCode);
+                }
+            });
+        };
+        traverse(data);
+        return flatList;
+    };
+
+    const flatEMDNList = flattenEMDNHierarchy(emdn);
+
+    return (
+        <div style={{ display: "flex" }}>
+            <NavBar onToggle={setIsNavOpen} />
+            <div style={{ width: isNavOpen ? "calc(100% - 0px)" : "calc(100% - 60px)", transition: "width 0.3s ease", padding: "20px", marginTop: 50 }}>
+                <Stepper activeStep={step} alternativeLabel>
+                    <Step>
+                        <StepLabel>Modifier l&apos;équipement</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Planifier la maintenance</StepLabel>
+                    </Step>
+                </Stepper>
+
+                <Slide direction="right" in={step === 0} mountOnEnter unmountOnExit>
+                    <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px" }}>
+                        <form onSubmit={handleEquipmentSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", width: "50%" }}>
+                            <h1>Modifier l&apos;équipement</h1>
+                            <TextField label="Nom de l'équipement" name="nom" value={equipmentFormData.nom} onChange={handleEquipmentChange} required />
+                            <Autocomplete
+                                options={flatEMDNList}
+                                getOptionLabel={(option) => `${option.code} - ${option.nom}`}
+                                value={flatEMDNList.find(opt => opt.code.split('.').pop() === equipmentFormData.emdnCode) || null}
+                                onChange={(event, newValue) => {
+                                    setEquipmentFormData({
+                                        ...equipmentFormData,
+                                        emdnCode: newValue ? newValue.code.split('.').pop() : ""
+                                    });
+                                }}
+                                renderInput={(params) => <TextField {...params} label="Sélectionner un code EMDN" required />}
+                            />
+                            <TextField label="Durée de vie (en années)" name="lifespan" type="number" value={equipmentFormData.lifespan} onChange={handleEquipmentChange} required />
+                            <FormControl key={`riskClass-${equipmentFormData.riskClass}`}>
+                                <InputLabel>Classe de risque</InputLabel>
+                                <Select name="riskClass" value={equipmentFormData.riskClass} onChange={handleEquipmentChange} required>
+                                    {riskClasses.map((risk) => (
+                                        <MenuItem key={risk} value={risk}>{risk}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl key={`hospital-${equipmentFormData.hospitalId}`}>
+                                <InputLabel>Hôpital</InputLabel>
+                                <Select name="hospitalId" value={equipmentFormData.hospitalId} onChange={handleEquipmentChange} required>
+                                    {hospitals.map((hospital) => (
+                                        <MenuItem key={hospital.id} value={hospital.id}>
+                                            {hospital.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <Button type="submit" variant="contained" color="primary">Modifier l’équipement</Button>
+                            <Button type="button" variant="outlined" color="secondary" onClick={() => navigate("/manage-equipment/equipments")}>Annuler</Button>
+                        </form>
+                    </Paper>
+                </Slide>
+
+                <Slide direction="left" in={step === 1} mountOnEnter unmountOnExit>
+                    <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px", float: "right", width: "50%" }}>
+                        <form onSubmit={handleMaintenanceSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            <h1>Plan de maintenance</h1>
+                            {maintenancePlans.length > 0 ? (
+                                maintenancePlans.map((plan, index) => (
+                                    <div key={index}>
+                                        <TextField
+                                            label="Date de maintenance"
+                                            type="date"
+                                            name="maintenanceDate"
+                                            value={plan.maintenanceDate}
+                                            onChange={(event) => handleMaintenanceChange(event, index)}
+                                            InputLabelProps={{ shrink: true }}
+                                            fullWidth
+                                        />
+                                        <TextField
+                                            label="Description"
+                                            name="description"
+                                            value={plan.description}
+                                            onChange={(event) => handleMaintenanceChange(event, index)}
+                                            fullWidth
+                                        />
+                                        <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
+                                            Supprimer
+                                        </Button>
+                                    </div>
+                                ))
+                            ) : (
+                                <Typography>Aucun plan de maintenance trouvé.</Typography>
+                            )}
+                            <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
+                                Ajouter un autre plan
+                            </Button>
+                            <Button type="submit" variant="contained" color="primary">
+                                Planifier
+                            </Button>
+                            <Button type="button" variant="outlined" color="secondary" onClick={() => setStep(0)}>Retour</Button>
+                        </form>
+                    </Paper>
+                </Slide>
+            </div>
+        </div>
+    );
+};
+
+export default UpdateEquipmentByMS;
+
+
+
+

@@ -1,0 +1,31 @@
+/* Conteneur principal */
+.container {
+    display: flex;
+    height: 100vh;  /* Prend toute la hauteur de l'écran */
+    overflow-y: auto; /* Affiche la barre de défilement uniquement si nécessaire */
+    scrollbar-width: none; /* Masque la barre de défilement sur Firefox */
+}
+
+.container::-webkit-scrollbar {
+    display: none; /* Masque la barre de défilement sur Webkit (Chrome, Safari) */
+}
+
+/* Barre latérale (sidebar) */
+.sideBar {
+    width: 80px;
+    padding: 0;
+}
+
+/* Contenu principal */
+.main {
+    margin-top: 15vh; /* Ajuste l’espace entre la navbar et le contenu */
+    flex-grow: 1;
+    height: 75vh; /* Contenu principal prend le reste de la hauteur */
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+    list-style: none;}

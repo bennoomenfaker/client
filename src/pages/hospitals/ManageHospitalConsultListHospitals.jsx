@@ -1,0 +1,193 @@
+import { useEffect, useState } from "react";
+import NavBar from "../../components/NavBar";
+import { DataGrid } from "@mui/x-data-grid";
+import { Button, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteHospital, fetchHospitals } from "../../redux/slices/hospitalSlice";
+import { useNavigate } from "react-router-dom";
+import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Add as AddIcon} from "@mui/icons-material";
+import { toast } from "react-toastify";
+import { CSVLink } from "react-csv"; // Importation du package CSVLink pour l'exportation en CSV
+
+const ManageHospitalConsultListHospitals = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const hospitals = useSelector((state) => state.hospital.hospitals);
+  const [search, setSearch] = useState("");
+  const [filteredHospitals, setFilteredHospitals] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedHospital, setSelectedHospital] = useState(null);
+  const [sortModel, setSortModel] = useState([{ field: 'name', sort: 'asc' }]);
+
+  useEffect(() => {
+    if (hospitals.length === 0) {
+      dispatch(fetchHospitals());
+    } else {
+      setFilteredHospitals(hospitals);
+    }
+  }, [dispatch, hospitals]);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    filterHospitals(value);
+  };
+
+  const filterHospitals = (searchTerm) => {
+    if (!searchTerm) {
+      setFilteredHospitals(hospitals);
+    } else {
+      const filtered = hospitals.filter(
+        (hospital) =>
+          hospital.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          hospital.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          hospital.phoneNumber.includes(searchTerm) ||
+          hospital.email.includes(searchTerm)
+      );
+      setFilteredHospitals(filtered);
+    }
+  };
+
+  const handleDelete = (id) => {
+    setOpenDialog(true);
+    setSelectedHospital(id);
+  };
+
+  const confirmDelete = () => {
+    dispatch(deleteHospital(selectedHospital));
+    setOpenDialog(false);
+    toast.success("Hôpital supprimé avec succès !");
+  };
+
+  const columns = [
+    { field: 'name', headerName: 'Name', flex: 1, sortable: true },
+    { field: 'address', headerName: 'Address', flex: 1, sortable: true },
+    { field: 'phoneNumber', headerName: 'Phone', flex: 1, sortable: true },
+    { field: 'email', headerName: 'Email', flex: 1, sortable: true },
+    {
+      field: 'gouvernorat',
+      headerName: 'Gouvernorat',
+      flex: 1,
+      sortable: true,
+      valueGetter: (params) => params.nom,
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      renderCell: (params) => (
+        <div>
+          <IconButton onClick={() => navigate(`/manage-hospitals/consult-hospital-details/${params.id}`)}>
+            <VisibilityIcon color="primary" />
+          </IconButton>
+          <IconButton onClick={() => navigate(`/manage-hospitals/update-hospital/${params.id}`)}>
+            <EditIcon color="warning" />
+          </IconButton>
+          <IconButton onClick={() => handleDelete(params.id)}>
+            <DeleteIcon color="error" />
+          </IconButton>
+        </div>
+      ),
+      sortable: false,
+      width: 150,
+    },
+  ];
+
+  const rows = filteredHospitals.map(hospital => ({
+    ...hospital,
+    id: hospital.id,
+    gouvernorat: hospital.gouvernorat || { nom: "Non spécifié" },
+  }));
+
+  const handleSortModelChange = (newSortModel) => {
+    setSortModel(newSortModel);
+    const sortedRows = [...filteredHospitals];
+    const { field, sort } = newSortModel[0];
+
+    sortedRows.sort((a, b) => {
+      if (a[field] < b[field]) return sort === 'asc' ? -1 : 1;
+      if (a[field] > b[field]) return sort === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredHospitals(sortedRows);
+  };
+
+  return (
+    <div style={{ display: "flex" }}>
+      <NavBar onToggle={() => { }} />
+      <div style={{ width: "100%", padding: "20px", marginTop: 50 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => navigate("/manage-hospitals/create-new-hospital")}
+            startIcon={<AddIcon />}
+            sx={{ textTransform: "none", fontWeight: "bold", padding: "8px 16px", borderRadius: "8px", boxShadow: 2 }}
+          >
+            Créer un hôpital
+          </Button>
+
+          <CSVLink
+            data={rows} // Données à exporter
+            headers={columns.map(col => ({ label: col.headerName, key: col.field }))}
+            filename={"hospitals_list.csv"} // Nom du fichier CSV
+            className="btn btn-outline-success"
+            style={{
+             
+              textDecoration:"none"
+            }}
+          >
+                <Button variant="contained" color="primary">
+                Exporter CSV
+                </Button>
+          </CSVLink>
+
+          <TextField
+            label="Rechercher un hôpital"
+            variant="outlined"
+            value={search}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: "40%", backgroundColor: "white", borderRadius: "8px", boxShadow: 1 }}
+          />
+        </div>
+
+        <div style={{ height: 400, width: '100%', marginTop: 20 }}>
+          <DataGrid
+            rows={rows} // Utiliser les données filtrées
+            columns={columns}
+            pageSize={rowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            onPageSizeChange={(newPageSize) => setRowsPerPage(newPageSize)}
+            page={page}
+            onPageChange={(newPage) => setPage(newPage)}
+            sortingOrder={['asc', 'desc']}
+            sortModel={sortModel}  // Contrôler le modèle de tri ici
+            onSortModelChange={handleSortModelChange} // Gérer les changements de tri
+          />
+        </div>
+      </div>
+
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirmation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Voulez-vous désactiver cet hôpital ?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="primary">Annuler</Button>
+          <Button onClick={confirmDelete} color="error">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ManageHospitalConsultListHospitals;

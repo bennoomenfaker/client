@@ -1,0 +1,256 @@
+import { useDispatch, useSelector } from "react-redux";
+import NavBar from "../../components/NavBar";
+import { useEffect, useState } from "react";
+import { deleteUser, getUsers, getUsersGetHospitalsAdmin, getUsersByServiceIdAndHospitalId, getUsersByHospitalId } from "../../redux/slices/userSlice";
+import { fetchHospitals } from "../../redux/slices/hospitalSlice";
+import { fetchServicesByHospitalId } from "../../redux/slices/hospitalServiceSlice";
+import { DataGrid } from "@mui/x-data-grid";
+import { TextField, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Select, MenuItem, InputAdornment, IconButton } from "@mui/material";
+import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { PersonAdd, AdminPanelSettings, Business, BusinessCenter } from "@mui/icons-material";
+import { toast } from "react-toastify";
+import { debounce } from "lodash"; // Import lodash debounce
+
+const ManageUserConsultUsers = () => {
+  const adminUsers = useSelector((state) => state.user.hospitalsAdmins);
+  const users = useSelector((state) => state.user.allUsers);
+  const usersByHospital = useSelector((state) => state.user.usersByHospital);
+  const usersByHospitalAndService = useSelector((state) => state.user.usersByServiceAndHospital);
+  const hospitals = useSelector((state) => state.hospital.hospitals);
+  const servicesByHospital = useSelector((state) => state.hospitalService.serviceByHospital);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [filteredRows, setFilteredRows] = useState([]); // Données filtrées pour le DataGrid
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedHospital, setSelectedHospital] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+  const [view, setView] = useState("admin"); // "admin", "hospital", "hospitalService"
+
+  // Préparer les données pour le DataGrid
+  const rows = (view === "admin" ? adminUsers : (view === "hospital" ? usersByHospital : usersByHospitalAndService)).map(user => ({
+    ...user,
+    id: user.id,
+    hospitalName: hospitals.find(hospital => hospital.id === user.hospitalId)?.name || "N/A", // Ajouter le nom de l'hôpital
+  }));
+
+  // Débounce de la recherche pour éviter les mises à jour incessantes
+  const debouncedSearch = debounce((searchTerm) => {
+    if (searchTerm) {
+      const filtered = rows.filter(
+        (user) =>
+          user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.telephone.includes(searchTerm) ||
+          user.hospitalName.toLowerCase().includes(searchTerm.toLowerCase()) // Rechercher aussi par hôpital
+      );
+      setFilteredRows(filtered);
+    } else {
+      setFilteredRows(rows); // Si la recherche est vide, afficher toutes les données
+    }
+  }, 500); // 500ms de délai avant d'appliquer le filtrage
+
+  // Effectuer la recherche lors de la saisie de l'utilisateur
+  useEffect(() => {
+    debouncedSearch(search);
+    return () => {
+      debouncedSearch.cancel(); // Annuler le debounce si le composant est démonté ou la recherche change
+    };
+  }, [search, rows]); // Assurer que la recherche ne redéclenche pas la mise à jour à chaque rendu
+
+  // Charger les données au montage du composant
+  useEffect(() => {
+    const fetchUserData = async  () => {
+       dispatch(fetchHospitals());
+      await  dispatch(getUsersGetHospitalsAdmin());
+      await  dispatch(getUsers());
+    };
+    fetchUserData();
+  }, [dispatch]);
+
+  // Mettre à jour les données en fonction de la vue sélectionnée
+  useEffect(() => {
+    if (view === "admin") {
+      setFilteredRows(adminUsers);
+    } else if (view === "hospital" && selectedHospital) {
+      dispatch(getUsersByHospitalId(selectedHospital));
+    } else if (view === "hospitalService" && selectedHospital && selectedService) {
+      dispatch(getUsersByServiceIdAndHospitalId({ hospitalId: selectedHospital, serviceId: selectedService }));
+    }
+  }, [view, adminUsers, selectedHospital, selectedService, dispatch]);
+
+  // Gérer la suppression d'un utilisateur
+  const handleDelete = (id) => {
+    setOpenDialog(true);
+    setSelectedUser(id);
+  };
+
+  const confirmDelete = () => {
+    dispatch(deleteUser(selectedUser));
+    setOpenDialog(false);
+    toast.success("Utilisateur supprimé avec succès !");
+  };
+
+  // Gérer le changement d'hôpital
+  const handleHospitalChange = (e) => {
+    const hospitalId = e.target.value;
+    setSelectedHospital(hospitalId);
+    setSelectedService("");
+    if (hospitalId) {
+      dispatch(getUsersByHospitalId(hospitalId));
+      dispatch(fetchServicesByHospitalId(hospitalId));
+    } else {
+      setFilteredRows(view === "admin" ? adminUsers : users);
+    }
+  };
+
+  // Gérer le changement de service
+  const handleServiceChange = (e) => {
+    const serviceId = e.target.value;
+    setSelectedService(serviceId);
+    if (serviceId) {
+      dispatch(getUsersByServiceIdAndHospitalId({ hospitalId: selectedHospital, serviceId }));
+    } else if (selectedHospital) {
+      dispatch(getUsersByHospitalId(selectedHospital));
+    } else {
+      setFilteredRows(view === "admin" ? adminUsers : users);
+    }
+  };
+
+  // Gérer le changement de vue
+  const handleViewChange = (newView) => {
+    setView(newView);
+    setFilteredRows(newView === "admin" ? adminUsers : (newView === "hospital" ? usersByHospital : usersByHospitalAndService));
+  };
+
+  // Gérer la création d'un utilisateur
+  const handleCreate = () => {
+    navigate("/manage-users/create-new-user");
+  };
+
+  // Gérer la modification d'un utilisateur
+  const handleModifyUser = (user) => {
+    navigate(`/manage-users/modify-user/${user.id}`, {
+      state: { isAdmin: view === "admin" },
+    });
+  };
+
+  // Définir les colonnes du DataGrid
+  const columns = [
+    { field: 'firstName', headerName: 'First Name', flex: 1, sortable: true },
+    { field: 'lastName', headerName: 'Last Name', flex: 1, sortable: true },
+    { field: 'email', headerName: 'Email', flex: 1, sortable: true },
+    { field: 'telephone', headerName: 'Telephone', flex: 1, sortable: true },
+    { field: 'hospitalName', headerName: 'Hôpital', flex: 1, sortable: true },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => (
+        <div style={{ display: "flex" , gap: "auto"}}>
+         
+          <IconButton onClick={() => handleModifyUser(params.row)}>
+            <EditIcon color="warning" />
+          </IconButton>
+          <IconButton onClick={() => handleDelete(params.id)}>
+            <DeleteIcon color="error" />
+          </IconButton>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ display: "flex" }}>
+      <NavBar />
+      <div style={{ width: "100%", padding: "20px", marginTop: 50 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          <div style={{ display: "flex", gap: "2px", width: "60%", marginRight: "-3%" }}>
+            <Button style={{ width: "250px", fontSize: "11px", padding: "1%" }} variant="contained" onClick={() => handleViewChange("admin")} startIcon={<AdminPanelSettings />}>Administrateurs</Button>
+            <Button style={{ width: "250px", fontSize: "11px", padding: "1%" }} variant="contained" onClick={() => handleViewChange("hospital")} startIcon={<Business />}>Utilisateurs par Hôpital</Button>
+            <Button style={{ width: "250px", fontSize: "11px", padding: "1%" }} variant="contained" onClick={() => handleViewChange("hospitalService")} startIcon={<BusinessCenter />}>Utilisateurs par Hôpital et Service</Button>
+            <Button style={{ width: "250px", fontSize: "11px", padding: "1%" }} variant="contained" onClick={handleCreate} color="success" startIcon={<PersonAdd />}>Créer un utilisateur</Button>
+          </div>
+          <TextField
+            label="Rechercher un utilisateur"
+            variant="outlined"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              width: "40%",
+              backgroundColor: "white",
+              borderRadius: "8px",
+              boxShadow: 1,
+              marginLeft: "10%"
+            }}
+          />
+        </div>
+
+        {view !== "admin" && (
+          <Select
+            value={selectedHospital}
+            onChange={handleHospitalChange}
+            displayEmpty
+            fullWidth
+            sx={{ mb: 2, mt: 2 }}
+          >
+            <MenuItem value="">Sélectionner un hôpital</MenuItem>
+            {hospitals.map((hospital) => (
+              <MenuItem key={hospital.id} value={hospital.id}>{hospital.name}</MenuItem>
+            ))}
+          </Select>
+        )}
+
+        {view === "hospitalService" && (
+          <Select
+            value={selectedService}
+            onChange={handleServiceChange}
+            displayEmpty
+            fullWidth
+            sx={{ mb: 2 }}
+            disabled={!selectedHospital}
+          >
+            <MenuItem value="">Sélectionner un service</MenuItem>
+            {servicesByHospital.map((service) => (
+              <MenuItem key={service.id} value={service.id}>{service.name}</MenuItem>
+            ))}
+          </Select>
+        )}
+
+        <div style={{ height: 400, width: '100%', marginTop: 20 }}>
+          <DataGrid
+            rows={filteredRows} // Données filtrées
+            columns={columns} // Colonnes définies
+            pageSize={5} // Nombre de lignes par page
+            rowsPerPageOptions={[5, 10, 25]} // Options de pagination
+            sortingOrder={['asc', 'desc']} // Ordre de tri
+          />
+        </div>
+      </div>
+
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirmation de suppression</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Voulez-vous désactiver cet utilisateur ?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="primary">Annuler</Button>
+          <Button onClick={confirmDelete} color="error">Supprimer</Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ManageUserConsultUsers;
