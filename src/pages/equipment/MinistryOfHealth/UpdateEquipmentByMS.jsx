@@ -119,7 +119,6 @@ const UpdateEquipmentByMS = () => {
             ...equipmentFormData,
             brand: equipmentFormData.brand ? equipmentFormData.brand.name : '' // Assuming brand has 'name'
         };
-        console.log(formDataWithBrandName)
 
         try {
             await dispatch(updateEquipment({ id: equipmentId, formData: formDataWithBrandName }));

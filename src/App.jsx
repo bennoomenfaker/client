@@ -51,6 +51,7 @@ import ConsultListOfCorectveMaintenanceByCompany from './pages/CorrectveMaintenn
 import UpdateMaintenanceCorrective from './pages/CorrectveMaintennace/UpdateMaintenanceCorrective';
 import ConsultCoorectiveMaintenance from './pages/CorrectveMaintennace/ConsultCoorectiveMaintenance';
 import ConsultSlaByProvider from './pages/SLA/ConsultSlaByProvider';
+import ConsultOldTransfertEquipment from './pages/equipment/ConsultOldTransfertEquipment';
 
 
 function App() {
@@ -244,6 +245,10 @@ function App() {
         <Route
           path={`/manage-equipment/transferEquipmentInterHospital/:id`}
           element={isAuth ? (profile.hospitalAdmin || profile.serviceSupervisor ? <TransfertInterHospital /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+         <Route
+          path={`/manage-equipment/consultOldTransfertEquipment`}
+          element={isAuth ? (profile.hospitalAdmin || profile.maintenanceEngineer ? <ConsultOldTransfertEquipment /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
 
         <Route

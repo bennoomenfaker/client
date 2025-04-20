@@ -35,7 +35,6 @@ import DomainIcon from '@mui/icons-material/Domain';
 import { fetchNotifications, updateNotificationAsRead, deleteNotification } from '../redux/slices/notificationSlice';
 import { triggerEquipmentMaintenanceCheck, triggerSparePartMaintenanceCheck } from '../redux/slices/maintenancePlanSlice ';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-
 import { Badge, Menu, MenuItem, Modal } from '@mui/material';
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import CircleIcon from "@mui/icons-material/Circle";
@@ -48,6 +47,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import { GridMoreVertIcon } from '@mui/x-data-grid';
 import HandymanIcon from '@mui/icons-material/Handyman';
+import HistoryIcon from '@mui/icons-material/History';
 
 
 
@@ -719,6 +719,18 @@ export default function NavBar({ onToggle }) {
                   </ListItemIcon>
                 </Tooltip>
                 <ListItemText primary="Consulter les SLA" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
+          <ListItem disablePadding sx={{ display: 'block' }}>
+            { (userInfo?.maintenanceEngineer || userInfo.hospitalAdmin )&& (
+              <ListItemButton onClick={() => navigate('/manage-equipment/consultOldTransfertEquipment')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Consulter ancien transfére équipemnts" placement="right">
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <HistoryIcon  />
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Consulter ancien transfére équipemnts" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>
             )}
           </ListItem>

@@ -13,6 +13,7 @@ import sparePartsReducer from './slices/sparePartSlice'
 import notificationReducer from "./slices/notificationSlice";
 import incidentReducer from "./slices/incidentSlice";
 import correctiveMaintenanceReducer from "./slices/correctiveMaintenanceSlice";
+import transferReducer from "./slices/transferSlice";
 
 const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ const store = configureStore({
     notifications: notificationReducer,
     incident: incidentReducer,
     correctiveMaintenance: correctiveMaintenanceReducer,
+    transfer: transferReducer,
 
     },
 });

@@ -65,7 +65,7 @@ const ManageEquipmentConsultListEquipment = () => {
 
   const columns = [
     { field: "serialCode", headerName: "Code Série", width: 150 },
-    { field: "nom", headerName: "Nom", width: 200 , cellClassName: 'left-align-cell' },
+    { field: "nom", headerName: "Nom", width: 210 , cellClassName: 'left-align-cell' },
     { field: "supplier", headerName: "Fournisseur", width: 140 },
     { field: "riskClass", headerName: "Classe de Risque", width: 125 },
     { field: "amount", headerName: "Montant (dt)", width: 120, type: "number" },
@@ -89,7 +89,7 @@ const ManageEquipmentConsultListEquipment = () => {
       
         field: "actions",
         headerName: "Actions",
-        width: 310,
+        width: 260,
         renderCell: (params) => (
           <>
             <Tooltip title="Consulter l'équipement">
@@ -140,11 +140,11 @@ const ManageEquipmentConsultListEquipment = () => {
   return (
     <div style={{ display: "flex" }}>
       <NavBar onToggle={setIsNavOpen} />
-      <div style={{ width: "90%", padding: "20px", marginTop: 50 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 , ml:-6 }}>
+      <div style={{ width: '90%', padding: '10px', marginTop: 60 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 , ml:"-5%" , width:"100%"}}>
           {/* Bouton Ajouter un équipement */}
           {role !== "ROLE_SERVICE_SUPERVISOR" && (
-          <Button
+          <Button sx={{width:"30%"}}
             variant="contained"
             color="success"
             startIcon={<AddIcon />}
@@ -156,8 +156,8 @@ const ManageEquipmentConsultListEquipment = () => {
 
           {/*  Supprimer le Select si ROLE_SERVICE_SUPERVISOR */}
           {role !== "ROLE_SERVICE_SUPERVISOR" && (
-            <Select value={selectedService} onChange={handleServiceChange} displayEmpty>
-              <MenuItem value=""><em>Sélectionner un service</em></MenuItem>
+            <Select sx={{width:"70%"}} value={selectedService} onChange={handleServiceChange} displayEmpty>
+              <MenuItem value="" ><em>Sélectionner un service</em></MenuItem>
               {servicesByHospital.map((service) => (
                 <MenuItem key={service.id} value={service.id}>{service.name}</MenuItem>
               ))}
@@ -165,20 +165,19 @@ const ManageEquipmentConsultListEquipment = () => {
           )}
 
           {/* Champ de recherche */}
-          <TextField
+          <TextField 
             label="Rechercher un équipement"
             variant="outlined"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            width="100%"
-            sx={{ flexGrow: 1 }}
+            sx={{ flexGrow: 1  , width:"100%" }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
             }}
           />
 
           {/* Bouton Export CSV */}
-          <CSVLink data={filteredEquipments} headers={[
+          <CSVLink  data={filteredEquipments} headers={[
             { label: "Code Série", key: "serialCode" },
             { label: "Nom", key: "nom" },
             { label: "Fournisseur", key: "supplier" },
@@ -187,26 +186,42 @@ const ManageEquipmentConsultListEquipment = () => {
             { label: "Durée de vie (ans)", key: "lifespan" },
             { label: "Statut", key: "status" },
           ]} filename="equipements.csv">
-            <Button variant="outlined" color="primary">Exporter CSV</Button>
+            <Button variant="outlined" color="primary"  sx={{width:"140%" , height:"8vh"}}>Exporter CSV</Button>
           </CSVLink>
       
 
         </Box>
-        <DataGrid style={{marginLeft:'-4%'}} sx={{ '& .MuiDataGrid-cell': {
-  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  textAlign: 'center',
-},
-'& .left-align-cell': {
-  justifyContent: 'flex-start !important',
-  textAlign: 'left !important',
-},
-
+        <DataGrid style={{marginLeft:'-5%'}} 
+  sx={{
+    width: '104%',
+    overflowX: 'auto',
+    '& .MuiDataGrid-cell': {
+      borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      textAlign: 'center',
+      fontSize: '0.8rem', // ↓ Réduction de taille de police
+      padding: '4px 8px', // ↓ Réduction du padding
+    },
+    '& .MuiDataGrid-columnHeaders': {
+      fontSize: '0.85rem',
+      height: 40,
+      whiteSpace: 'normal',
+      lineHeight: 1.3,
+      textAlign: 'center',
+    },
+    '& .MuiDataGrid-root': {
+      maxWidth: '100%',
+    },
     '& .MuiDataGrid-row': {
-      borderBottom: '1px solid rgba(0, 0, 0, 0.05)', // optionnel : ligne horizontale entre les lignes
-    }}} rows={filteredEquipments} columns={columns} pageSize={5} getRowId={(row) => row.id} autoHeight />
+              borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+            },
+            
+  }}
+  rows={filteredEquipments} columns={columns} pageSize={5} getRowId={(row) => row.id} autoHeight    disableColumnResize={true}
+    columnHeaderHeight={40}
+/>
 
 
 

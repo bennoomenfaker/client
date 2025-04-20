@@ -27,7 +27,6 @@ const ConsultSlaByProvider = () => {
   const [slasWithNames, setSlasWithNames] = useState([]);
 
 
-console.log(sla)
 useEffect(() => {
     const fetchHospitalNames = async () => {
       const promises = sla.map((s) =>
