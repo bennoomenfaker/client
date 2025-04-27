@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import NavBar from '../../components/NavBar';
 import { useSelector, useDispatch } from 'react-redux';
-import { CircularProgress, Alert, Typography, Grid, TextField, InputAdornment, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { CircularProgress, Alert, Typography, Grid, TextField, InputAdornment, Button, IconButton, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { fetchAllMaintenancePlansByHospital, deleteMaintenancePlan } from '../../redux/slices/maintenancePlanSlice ';
-import { fetchEquipmentsByHospital, updateMaintenancePlansForEquipment } from "../../redux/slices/equipmentSlice";
+import { fetchAllMaintenancePlansByHospital, } from '../../redux/slices/maintenancePlanSlice ';
+import { fetchEquipmentsByHospital } from "../../redux/slices/equipmentSlice";
 import { DataGrid } from '@mui/x-data-grid';
 import { CSVLink } from 'react-csv';
 import { useNavigate } from 'react-router-dom';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { toast } from 'react-toastify';
-import { fetchSparePartById, updateSparePartMaintenancePlans } from '../../redux/slices/sparePartSlice';
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { fetchSparePartById } from '../../redux/slices/sparePartSlice';
 
 export default function TrackMaintenance() {
     const [isNavOpen, setIsNavOpen] = useState(true);
@@ -21,7 +19,6 @@ export default function TrackMaintenance() {
     const hospitalId = sessionStorage.getItem('hospitalId');
     const [search, setSearch] = useState('');
     const navigate = useNavigate();
-    const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
     const [filterType, setFilterType] = useState('all');
     const [filteredMaintennace, setFilteredMaintenance] = useState([]);
 
@@ -70,18 +67,7 @@ export default function TrackMaintenance() {
 
 
     const columns = [
-        {
-            field: 'id',
-            headerName: 'ID',
-            width: 150,
-            valueGetter: (params) => {
-
-                if (params) {
-                    return getSerialCodeByEquipmentId(params);
-                }
-                return params;
-            },
-        },
+       
         {
             field: 'maintenanceDate',
             headerName: 'Date',
@@ -91,7 +77,8 @@ export default function TrackMaintenance() {
                 return date.toLocaleDateString(); // Formater la date
             },
         },
-        { field: 'description', headerName: 'Description', width: 250 },
+        { field: 'description', headerName: 'Description', width: 409
+         },
         {
             field: 'equipmentId',
             headerName: 'Équipement',
@@ -113,13 +100,13 @@ export default function TrackMaintenance() {
                 return (
                     <>
                         {params.row.equipmentId && (
-                            <IconButton color="warning" onClick={() => navigate(`/manage-equipment/update-equipment/${serialCode}`)}>
-                                <EditIcon />
-                            </IconButton>
+                            <IconButton color="info" onClick={() => navigate(`/manage-equipment/update-equipment/${serialCode}`)}>
+    <VisibilityIcon color="primary" />         
+                       </IconButton>
                         )}
                         {params.row.sparePartId && (
                             <IconButton
-                                color="warning"
+                                color="info"
                                 onClick={async () => {
                                     try {
                                         const actionResult = await dispatch(fetchSparePartById(params.row.sparePartId));
@@ -132,12 +119,10 @@ export default function TrackMaintenance() {
                                     }
                                 }}
                             >
-                                <EditIcon />
-                            </IconButton>
+    <VisibilityIcon color="primary" />         
+    </IconButton>
                         )}
-                        <IconButton color="error" onClick={() => setDeleteDialog({ open: true, id: params.row.id })}>
-                            <DeleteIcon />
-                        </IconButton>
+                       
                     </>
                 );
             },
@@ -163,43 +148,6 @@ export default function TrackMaintenance() {
         );
     }
 
-    const handleDelete = async () => {
-      try {
-        // Supprimer le plan de maintenance
-        await dispatch(deleteMaintenancePlan({ maintenancePlanId: deleteDialog.id })).unwrap();
-    
-        // Récupérer les informations de l'élément concerné (équipement ou pièce de rechange)
-        const maintenancePlan = maintenancePlans.find(mp => mp.id === deleteDialog.id);
-        if (!maintenancePlan) {
-          toast.error("Plan de maintenance introuvable");
-          return;
-        }
-    
-        // Mise à jour de l'équipement ou de la pièce de rechange
-        if (maintenancePlan.equipmentId) {
-          const updatedPlans = maintenancePlans.filter(mp => mp.id !== deleteDialog.id);
-          await dispatch(updateMaintenancePlansForEquipment({
-            equipmentId: maintenancePlan.equipmentId,
-            updatedPlans
-          })).unwrap();
-        }
-    
-        if (maintenancePlan.sparePartId) {
-          const updatedPlans = maintenancePlans.filter(mp => mp.id !== deleteDialog.id);
-          await dispatch(updateSparePartMaintenancePlans({
-            sparePartId: maintenancePlan.sparePartId,
-            maintenancePlans: updatedPlans
-          })).unwrap();
-        }
-    
-        toast.success("Plan de maintenance supprimé avec succès");
-      // eslint-disable-next-line no-unused-vars
-      } catch (error) {
-        toast.error("Erreur lors de la suppression du plan de maintenance");
-      } finally {
-        setDeleteDialog({ open: false, id: null });
-      }
-    };
 
     return (
         <div style={{ display: "flex" }}>
@@ -264,7 +212,7 @@ export default function TrackMaintenance() {
                     </Grid>
                 </Grid>
 
-                <div style={{ width: '100%', marginTop: '20px' }}>
+                <div style={{ width: '83%', marginTop: '20px' }}>
                     <DataGrid
                         rows={filteredMaintennace}
                         columns={columns}
@@ -278,20 +226,7 @@ export default function TrackMaintenance() {
                     />
                 </div>
 
-                <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, id: null })}>
-                    <DialogTitle>Confirmer la suppression</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText>Êtes-vous sûr de vouloir supprimer ce plan de maintenance ?</DialogContentText>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setDeleteDialog({ open: false, id: null })} color="primary">
-                            Annuler
-                        </Button>
-                        <Button onClick={handleDelete} color="error">
-                            Supprimer
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+              
             </div>
         </div>
     );

@@ -97,6 +97,26 @@ export const updateSla = createAsyncThunk(
 );
 
 
+// 🚀 Vérifier la conformité d'un SLA pour un incident
+export const checkSlaCompliance = createAsyncThunk(
+  "sla/checkSlaCompliance",
+  async (incidentId, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/slas/check-compliance/${incidentId}`, 
+        {}, // pas de body, juste un appel
+        {
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        }
+      );
+      return response.data; // On peut retourner l'incident mis à jour si tu veux
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
+
+
 const slaSlice = createSlice({
   name: "sla",
   initialState: {
@@ -105,10 +125,14 @@ const slaSlice = createSlice({
     slasByProvider: [],
     isLoading: false,
     error: null,
+    slaComplianceStatus: null,
   },
   reducers: {
     resetSelectedSla: (state) => {
       state.selectedSla = null;
+    },
+    resetSlaComplianceStatus: (state) => {
+      state.slaComplianceStatus = null; 
     },
   },
   extraReducers: (builder) => {
@@ -135,6 +159,20 @@ const slaSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
+      .addCase(checkSlaCompliance.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(checkSlaCompliance.fulfilled, (state , action) => {
+        state.isLoading = false;
+        state.slaComplianceStatus = action.payload; 
+
+       
+      })
+      .addCase(checkSlaCompliance.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
       .addCase(fetchSlaByEquipmentId.fulfilled, (state, action) => {
         state.selectedSla = action.payload;
         state.isLoading = false;
@@ -177,5 +215,5 @@ const slaSlice = createSlice({
       });
   },
 });
-export const { resetSelectedSla } = slaSlice.actions;
+export const { resetSelectedSla, resetSlaComplianceStatus } = slaSlice.actions;
 export default slaSlice.reducer;

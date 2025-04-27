@@ -250,7 +250,8 @@ const UpdateEquipmentByMS = () => {
     const flatEMDNList = flattenEMDNHierarchy(emdn);
 
     const steps = ["Modifier l'équipement", "Planifier la maintenance", "SLA", "Pièces de rechange"];
-
+    // Add this condition to disable the fields
+    const shouldDisableFields = isAdmin || isCompany || isEngeering;
     return (
         <div style={{ display: "flex" }}>
             <NavBar onToggle={setIsNavOpen} />
@@ -286,6 +287,7 @@ const UpdateEquipmentByMS = () => {
                                         emdnCode: newValue ? newValue.code.split('.').pop() : ""
                                     });
                                 }}
+                                disabled={shouldDisableFields}
                                 renderInput={(params) => <TextField {...params} label="Sélectionner un code EMDN" required />}
                             />
                             <TextField
@@ -316,6 +318,7 @@ const UpdateEquipmentByMS = () => {
                                     name="hospitalId"
                                     value={equipmentFormData.hospitalId}
                                     onChange={handleEquipmentChange}
+                                    disabled={shouldDisableFields}
                                     required
                                 >
                                     {hospitals.map((hospital) => (
@@ -325,22 +328,16 @@ const UpdateEquipmentByMS = () => {
                                     ))}
                                 </Select>
                             </FormControl>
-                            {isAdmin && (
-                                <>
+                           
+                                  
                                     <TextField
-                                        label="Fournisseur"
-                                        name="supplier"
-                                        value={equipmentFormData.supplier}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
-                                    />
-                                    <TextField
-                                        label="Montant"
+                                        label="Montant d'acquisition"
                                         name="amount"
                                         type="number"
                                         value={equipmentFormData.amount}
                                         onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                        InputLabelProps={{ shrink: true }} 
+                                        disabled={shouldDisableFields}
                                     />
                                     <TextField
                                         label="Date d'acquisition"
@@ -348,31 +345,19 @@ const UpdateEquipmentByMS = () => {
                                         type="date"
                                         value={equipmentFormData.acquisitionDate}
                                         onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                        InputLabelProps={{ shrink: true }} 
+                                        disabled={shouldDisableFields}
                                     />
-                                    <TextField
-                                        label="Nombre d'utilisations"
-                                        name="useCount"
-                                        type="number"
-                                        value={equipmentFormData.useCount}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
-                                    />
-                                    <TextField
-                                        label="Durée d'utilisation"
-                                        name="usageDuration"
-                                        type="number"
-                                        value={equipmentFormData.usageDuration}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
-                                    />
+                                   
+                                  
                                     <TextField
                                         label="Date de début de garantie"
                                         name="startDateWarranty"
                                         type="date"
                                         value={equipmentFormData.startDateWarranty}
                                         onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                        InputLabelProps={{ shrink: true }} 
+                                        disabled={shouldDisableFields}
                                     />
                                     <TextField
                                         label="Date de fin de garantie"
@@ -380,9 +365,13 @@ const UpdateEquipmentByMS = () => {
                                         type="date"
                                         value={equipmentFormData.endDateWarranty}
                                         onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                        InputLabelProps={{ shrink: true }}
+                                        disabled={shouldDisableFields}
                                     />
-                                    <Autocomplete
+                                   
+                                     {isAdmin && (
+                                <>
+                                 <Autocomplete
                                         options={brands}
                                         getOptionLabel={(option) => option.name || ""}
                                         value={equipmentFormData.brand ? brands.find(brand => brand.id === equipmentFormData.brand.id) : null}
@@ -393,6 +382,29 @@ const UpdateEquipmentByMS = () => {
                                             });
                                         }}
                                         renderInput={(params) => <TextField {...params} label="Marque" variant="outlined" />}
+                                    />
+                                      <TextField
+                                        label="Fournisseur"
+                                        name="supplier"
+                                        value={equipmentFormData.supplier}
+                                        onChange={handleEquipmentChange}
+                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                    />
+                                     <TextField
+                                        label="Nombre d'utilisations"
+                                        name="useCount"
+                                        type="number"
+                                        value={equipmentFormData.useCount}
+                                        onChange={handleEquipmentChange}
+                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                    />
+                                  <TextField
+                                        label="Durée d'utilisation"
+                                        name="usageDuration"
+                                        type="number"
+                                        value={equipmentFormData.usageDuration}
+                                        onChange={handleEquipmentChange}
+                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
                                     />
                                     <Autocomplete
                                         options={servicesByHospital}
@@ -461,6 +473,8 @@ const UpdateEquipmentByMS = () => {
                                             onChange={(event) => handleMaintenanceChange(event, index)}
                                             InputLabelProps={{ shrink: true }}
                                             fullWidth
+                                            disabled={shouldDisableFields}
+
                                             style={{ marginBottom: "20px" }} // Marge spécifique entre les champs
                                         />
                                         <TextField
@@ -469,27 +483,33 @@ const UpdateEquipmentByMS = () => {
                                             value={plan.description}
                                             onChange={(event) => handleMaintenanceChange(event, index)}
                                             fullWidth
+                                            disabled={shouldDisableFields}
+
                                             style={{ marginBottom: "20px" }} // Marge spécifique entre les champs
                                         />
-                                        <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
-                                            Supprimer
-                                        </Button>
+                                      {!shouldDisableFields && (  // Only show delete button if fields shouldn't be disabled
+    <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
+        Supprimer
+    </Button>
+)}
                                     </div>
                                 ))
                             ) : (
                                 <Typography>Aucun plan de maintenance trouvé.</Typography>
                             )}
                             <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-                                <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
-                                    Ajouter un autre plan
-                                </Button>
-                                <Button type="submit" variant="contained" color="success">
+                            {!shouldDisableFields && (  // Only show these buttons if fields shouldn't be disabled
+    <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
+        Ajouter un autre plan
+    </Button>
+)}
+                                <Button type="submit" variant="contained" color="success"   disabled={shouldDisableFields}>
                                     Planifier
                                 </Button>
                                 <Button type="button" onClick={() => setStep(0)}>
                                     Retour
                                 </Button>
-                                <Button type="button" onClick={() => setStep(2)}>Passer</Button>
+                                {shouldDisableFields && (   <Button type="button" onClick={() => setStep(2)}>Passer</Button> )}
 
                             </div>
                         </form>

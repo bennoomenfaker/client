@@ -17,6 +17,7 @@ export const fetchNotifications = createAsyncThunk(
       const response = await axios.get(`${API_BASE_URL}/${userId}`, {
         headers: getAuthHeaders(),
       });
+      console.log(response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur lors de la récupération des notifications");
@@ -61,7 +62,9 @@ let socket = null;
 const notificationSlice = createSlice({
   name: "notifications",
   initialState: {
-    list: JSON.parse(localStorage.getItem("notifications")) || [],
+    list: Array.isArray(JSON.parse(localStorage.getItem("notifications"))) 
+      ? JSON.parse(localStorage.getItem("notifications")) 
+      : [],
     error: null,
     isLoading: false,
   },

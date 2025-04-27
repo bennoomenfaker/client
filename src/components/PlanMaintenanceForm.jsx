@@ -1,16 +1,19 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { TextField, Button } from "@mui/material";
+import { TextField, Button, IconButton } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { toast } from "react-toastify";
-import { updateMaintenancePlansForEquipment } from "../redux/slices/equipmentSlice";
-
+import { useNavigate } from "react-router-dom";
+import { createMaintenancePlan } from "../redux/slices/maintenancePlanSlice "; 
 
 // eslint-disable-next-line react/prop-types
 const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const [maintenancePlans, setMaintenancePlans] = useState([
-        { maintenanceDate: "", description: "", equipmentId: equipmentId }
+        { maintenanceDate: "", description: "", equipmentId }
     ]);
 
     const handleChange = (event, index) => {
@@ -20,7 +23,24 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
         setMaintenancePlans(updatedPlans);
     };
 
+    const handleAddPlan = () => {
+        setMaintenancePlans([
+            ...maintenancePlans,
+            { maintenanceDate: "", description: "", equipmentId }
+        ]);
+    };
+
+    const handleRemovePlan = (indexToRemove) => {
+        if (maintenancePlans.length === 1) {
+            toast.warning("Au moins un plan de maintenance est requis.");
+            return;
+        }
+        const updatedPlans = maintenancePlans.filter((_, index) => index !== indexToRemove);
+        setMaintenancePlans(updatedPlans);
+    };
+
     const validateForm = () => {
+        const today = new Date();
         for (const plan of maintenancePlans) {
             const { maintenanceDate, description } = plan;
 
@@ -29,46 +49,49 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
                 return false;
             }
 
-            const today = new Date().toISOString().split("T")[0]; // Date d'aujourd'hui au format YYYY-MM-DD
-            if (maintenanceDate <= today) {
-                toast.warning("La date de maintenance doit être dans le futur !");
+            const planDate = new Date(maintenanceDate);
+            if (planDate <= today) {
+                toast.warning("La date de maintenance doit être strictement future !");
                 return false;
             }
         }
-
         return true;
-    };
-
-    const handleAddPlan = () => {
-        setMaintenancePlans([
-            ...maintenancePlans,
-            { maintenanceDate: "", description: "", equipmentId: equipmentId }
-        ]);
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        
-        if (!validateForm()) return; // Stop si le formulaire n'est pas valide
+        if (!validateForm()) return;
 
         try {
-            // Envoyer chaque plan de maintenance au backend
-       
-                await dispatch(updateMaintenancePlansForEquipment({ equipmentId, updatedPlans: maintenancePlans}));
-        
-            toast.success("Plans de maintenance ajoutés !");
-            onComplete(); // Passer à l'étape suivante
-           // navigate("/manage-equipment/equipments");
-        // eslint-disable-next-line no-unused-vars
+            // Parcours de chaque plan et envoi séparé
+            for (const plan of maintenancePlans) {
+                const maintenancePlanData = {
+                    maintenanceDate: plan.maintenanceDate,
+                    description: plan.description,
+                    equipmentId
+                };
+
+                await dispatch(createMaintenancePlan({ 
+                    equipmentId, 
+                    maintenancePlanData // Envoi d'un plan à la fois avec ses données
+                }));
+            }
+            
+            toast.success("Tous les plans de maintenance ont été ajoutés !");
+            onComplete(); // Appel de la fonction de callback pour signaler la fin de la planification
+            navigate("/manage-equipment/equipments"); // Navigation vers la page de gestion des équipements
         } catch (error) {
             toast.error("Erreur lors de la planification.");
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", width: "50%" }}>
+        <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: "16px", width: "50%", marginLeft: "auto" }}
+        >
             {maintenancePlans.map((plan, index) => (
-                <div key={index}>
+                <div key={index} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <TextField
                         label="Date de maintenance"
                         type="date"
@@ -85,11 +108,18 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
                         onChange={(event) => handleChange(event, index)}
                         fullWidth
                     />
+                    {maintenancePlans.length > 1 && (
+                        <IconButton color="error" onClick={() => handleRemovePlan(index)} aria-label="Supprimer">
+                            <DeleteIcon />
+                        </IconButton>
+                    )}
                 </div>
             ))}
+
             <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
                 Ajouter un autre plan
             </Button>
+
             <Button type="submit" variant="contained" color="primary">
                 Planifier
             </Button>

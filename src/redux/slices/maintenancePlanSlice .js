@@ -139,7 +139,7 @@ export const fetchMaintenancePlansForSparePart = createAsyncThunk(
   }
 );
 
-// ✅ Action Redux asynchrone pour déclencher la vérification de maintenance des équipements
+// Action Redux asynchrone pour déclencher la vérification de maintenance des équipements
 export const triggerEquipmentMaintenanceCheck = createAsyncThunk(
   "maintenancePlan/triggerEquipmentMaintenance",
   async (_, { rejectWithValue }) => {
@@ -157,8 +157,30 @@ export const triggerEquipmentMaintenanceCheck = createAsyncThunk(
       }
   }
 );
+// Créer un plan de maintenance
+export const createMaintenancePlan = createAsyncThunk(
+  "maintenancePlan/create",
+  async ({ equipmentId, maintenancePlanData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/${equipmentId}`,
+        maintenancePlanData,
+        {
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur lors de la création du plan de maintenance.");
+    }
+  }
+);
 
-// ✅ Action Redux asynchrone pour déclencher la vérification de maintenance des pièces de rechange
+
+//  Action Redux asynchrone pour déclencher la vérification de maintenance des pièces de rechange
 export const triggerSparePartMaintenanceCheck = createAsyncThunk(
   "maintenancePlan/triggerSparePartMaintenance",
   async (_, { rejectWithValue }) => {
@@ -316,7 +338,20 @@ const maintenancePlanSlice = createSlice({
           state.isTriggeringEquipment = false;
           state.triggerEquipmentError = action.payload;
       })
-
+            // Créer un plan de maintenance
+            .addCase(createMaintenancePlan.pending, (state) => {
+              state.isLoading = true;
+              state.error = null;
+            })
+            .addCase(createMaintenancePlan.fulfilled, (state, action) => {
+              state.isLoading = false;
+              state.maintenancePlans.push(action.payload); // ajoute le plan créé à la liste
+            })
+            .addCase(createMaintenancePlan.rejected, (state, action) => {
+              state.isLoading = false;
+              state.error = action.payload;
+            })
+      
       // Déclenchement de la vérification de maintenance des pièces de rechange
       .addCase(triggerSparePartMaintenanceCheck.pending, (state) => {
           state.isTriggeringSparePart = true;

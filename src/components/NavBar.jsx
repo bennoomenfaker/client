@@ -137,7 +137,7 @@ export default function NavBar({ onToggle }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [profileFetched, setProfileFetched] = useState(false);
-  const notifications = useSelector((state) => state.notifications.list); // Récupérer la liste des notifications
+  const notifications = useSelector((state) => state.notifications.list || []); // Récupérer la liste des notifications
   const [lastSeenNotificationTime, setLastSeenNotificationTime] = useState(null);
 
   const unreadCount = useMemo(() => {
@@ -675,7 +675,7 @@ export default function NavBar({ onToggle }) {
 
           {/* Nouvel élément de liste pour le suivi des maintenances */}
           <ListItem disablePadding sx={{ display: 'block' }}>
-            {(userInfo?.hospitalAdmin || userInfo?.ministryAdmin || userInfo?.maintenanceEngineer || userInfo?.maintenanceCompanyStaff) && (
+            {(userInfo?.hospitalAdmin  || userInfo?.maintenanceEngineer || userInfo?.maintenanceCompanyStaff) && (
               <ListItemButton onClick={handleTrackMaintenance} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Suivi des Maintenances préventives" placement="right">
                   <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
@@ -687,7 +687,7 @@ export default function NavBar({ onToggle }) {
             )}
           </ListItem>
           <ListItem disablePadding sx={{ display: 'block' }}>
-            {  userInfo?.maintenanceCompanyStaff && (
+            { ( userInfo?.maintenanceCompanyStaff ) && (
               <ListItemButton onClick={handleTrackMaintenanceCorrective} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Maintenances correctives" placement="right">
                   <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>

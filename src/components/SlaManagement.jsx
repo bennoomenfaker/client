@@ -156,7 +156,7 @@ const SlaManagement = ({ equipment,setStep  }) => {
 </Box>
 
         <TextField
-          label="Pénalité (dt)"
+          label="Pénalité (dt/h)"
           name="penaltyAmount"
           type="number"
           value={slaData.penaltyAmount}

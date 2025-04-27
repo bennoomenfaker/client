@@ -4,10 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Box, CircularProgress,IconButton,TextField,InputAdornment,Button,Typography,  Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, ToggleButton, Grid, ToggleButtonGroup } from "@mui/material";
 import { deleteIncident, fetchIncidentsByHospital  } from "../../redux/slices/incidentSlice";
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { useNavigate } from "react-router-dom";
 import { DataGrid, GridCheckCircleIcon } from '@mui/x-data-grid';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { checkSlaCompliance } from "../../redux/slices/slaSlice";
+
 
 
 const NavBar = React.lazy(() => import("../../components/NavBar"));
@@ -20,6 +23,8 @@ const ConsultListIncident = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { list, isLoading: isIncidentLoading } = useSelector((state) => state.incident);
+  const slaComplianceStatus = useSelector((state) => state.sla.slaComplianceStatus);
+  const isLoading = useSelector((state) => state.sla.isLoading);
 
   const [searchText, setSearchText] = useState("");
   const loading = isIncidentLoading || false;
@@ -40,6 +45,16 @@ const [filterType, setFilterType] = useState("all");
 
     loadIncidents();
   }, [dispatch]);
+
+  const handleCheckSlaClick = async (incidentId) => {
+    try {
+      await dispatch(checkSlaCompliance(incidentId));
+      toast.success("Vérification SLA effectuée !");
+    } catch (error) {
+      toast.error("Erreur lors de la vérification du SLA.");
+    }
+  };
+  
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const filteredIncidents = useMemo(() => {
@@ -149,6 +164,16 @@ const [filterType, setFilterType] = useState("all");
           <EditIcon />
         </IconButton>
       </Tooltip>
+      <Tooltip title="Vérifier SLA">
+  <IconButton
+    size="small"
+    color="info"
+    onClick={() => handleCheckSlaClick(params.row.incidentId)}
+  >
+    <VerifiedIcon /> {/* Ou un icône qui représente la vérification */}
+  </IconButton>
+</Tooltip>
+
       
       <Tooltip title="Supprimer l'incident">
         <IconButton

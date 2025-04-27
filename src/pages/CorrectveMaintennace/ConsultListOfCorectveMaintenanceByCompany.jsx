@@ -99,7 +99,10 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
     color="primary"
     onClick={() =>
       navigate(`/corrective-maintenance/consult/${params.row.id}`, {
-        state: { maintenance: params }
+        state: { 
+          serialCode: params.row?.serialCode,
+          incidentData: params.row?.incidentId
+        }
       })
     }
   >
@@ -121,11 +124,7 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
               <EditIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Supprimer">
-            <IconButton color="error" onClick={() => handleDelete(params.row.id)}>
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
+         
         </>
       )
     }

@@ -29,7 +29,7 @@ const ConsultOldTransfertEquipment = () => {
 
   // Filtrage de la liste selon la recherche
   const filteredTransferEquipment = listOfOldTransfertEquiment.filter(item => 
-    item.equipment.nom.toLowerCase().includes(search.toLowerCase()) ||
+    item?.equipment?.nom.toLowerCase().includes(search.toLowerCase()) ||
     item.oldHospitalName.toLowerCase().includes(search.toLowerCase()) ||
     item.createdAt.toLowerCase().includes(search.toLowerCase()) ||
     item.newHospitalName.toLowerCase().includes(search.toLowerCase())
