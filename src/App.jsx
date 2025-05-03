@@ -52,6 +52,7 @@ import UpdateMaintenanceCorrective from './pages/CorrectveMaintennace/UpdateMain
 import ConsultCoorectiveMaintenance from './pages/CorrectveMaintennace/ConsultCoorectiveMaintenance';
 import ConsultSlaByProvider from './pages/SLA/ConsultSlaByProvider';
 import ConsultOldTransfertEquipment from './pages/equipment/ConsultOldTransfertEquipment';
+import ConsultListIncidentByMS from './pages/incident/ConsultListIncidentByMS';
 
 
 function App() {
@@ -303,6 +304,12 @@ function App() {
 <Route
           path={`/manageSla/consltSlaByMaintennaceProvider`}
           element={isAuth ? (profile.maintenanceCompanyStaff  ? <ConsultSlaByProvider /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+     
+        
+<Route
+          path={`manage-incident/consultListOfIncidentByMS`}
+          element={isAuth ? (profile.ministryAdmin  ? <ConsultListIncidentByMS /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
 
         

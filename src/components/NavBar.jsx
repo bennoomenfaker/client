@@ -699,8 +699,20 @@ export default function NavBar({ onToggle }) {
             )}
           </ListItem>
           <ListItem disablePadding sx={{ display: 'block' }}>
-            {(userInfo?.ministryAdmin || userInfo?.hospitalAdmin || userInfo?.serviceSupervisor || userInfo?.maintenanceEngineer) && (
+            {( userInfo?.hospitalAdmin || userInfo?.serviceSupervisor || userInfo?.maintenanceEngineer) && (
               <ListItemButton onClick={() => navigate('/manage-incident/consultListOfIncident')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Consulter les incidents" placement="right">
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <ReportProblemIcon />
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Consulter les incidents" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
+          <ListItem disablePadding sx={{ display: 'block' }}>
+            {(userInfo?.ministryAdmin) && (
+              <ListItemButton onClick={() => navigate('/manage-incident/consultListOfIncidentByMS')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Consulter les incidents" placement="right">
                   <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
                     <ReportProblemIcon />

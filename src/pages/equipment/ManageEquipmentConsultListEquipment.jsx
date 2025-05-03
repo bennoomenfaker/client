@@ -16,7 +16,8 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import { toast } from "react-toastify";
 import ReportIcon from "@mui/icons-material/Report"; 
-
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 
 const ManageEquipmentConsultListEquipment = () => {
@@ -136,7 +137,14 @@ const ManageEquipmentConsultListEquipment = () => {
       }
       
   ];
-
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(filteredEquipments);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(data, 'equipment.xlsx');
+  };
   return (
     <div style={{ display: "flex" }}>
       <NavBar onToggle={setIsNavOpen} />
@@ -188,6 +196,9 @@ const ManageEquipmentConsultListEquipment = () => {
           ]} filename="equipements.csv">
             <Button variant="outlined" color="primary"  sx={{width:"140%" , height:"8vh"}}>Exporter CSV</Button>
           </CSVLink>
+           <Button variant="outlined" color="primary" onClick={() => exportToExcel()} style={{display:"flex",color: 'blue' , height:"7vh",width:"400px", marginLeft:"5%" }}>
+                        Exporter      Excel
+                      </Button>
       
 
         </Box>

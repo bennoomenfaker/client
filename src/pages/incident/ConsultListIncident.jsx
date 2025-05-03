@@ -9,8 +9,9 @@ import { useNavigate } from "react-router-dom";
 import { DataGrid, GridCheckCircleIcon } from '@mui/x-data-grid';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { checkSlaCompliance } from "../../redux/slices/slaSlice";
-
+import { checkSlaCompliance , resetSlaComplianceStatus } from "../../redux/slices/slaSlice";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 
 const NavBar = React.lazy(() => import("../../components/NavBar"));
@@ -48,14 +49,30 @@ const [filterType, setFilterType] = useState("all");
 
   const handleCheckSlaClick = async (incidentId) => {
     try {
+      // Dispatching the checkSlaCompliance action
       await dispatch(checkSlaCompliance(incidentId));
+  
+      // After the dispatch, the result should be updated in the Redux store
       toast.success("Vérification SLA effectuée !");
+      
+      // Open the dialog to show SLA result
+      setOpenDialog(true);
     } catch (error) {
       toast.error("Erreur lors de la vérification du SLA.");
     }
   };
-  
 
+   // Dialog to show SLA result
+   const renderSlaStatus = () => {
+    if (isLoading) {
+      return <CircularProgress />;
+    }
+    return slaComplianceStatus ? (
+      <Typography variant="body1">{`SLA Status: ${slaComplianceStatus}`}</Typography>
+    ) : (
+      <Typography variant="body1">Aucune information sur le SLA</Typography>
+    );
+  };
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const filteredIncidents = useMemo(() => {
     const lowerSearch = searchText.toLowerCase();
@@ -152,7 +169,7 @@ const [filterType, setFilterType] = useState("all");
     </IconButton>
       </Tooltip>
       
-      <Tooltip title="Modifier l'équipement">
+      <Tooltip title="Modifier l'incident">
         <IconButton
         size="small"
           aria-label="edit"
@@ -229,7 +246,20 @@ const [filterType, setFilterType] = useState("all");
     setSelectedIncidentId(null);
   };
   
-
+  const handleCloseDialog = () => {
+    // Reset the SLA compliance status when closing the dialog
+    dispatch(resetSlaComplianceStatus());
+    setOpenDialog(false);
+  };
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(csvData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(data, 'incidents.xlsx');
+  };
+  
   return (
     <div style={{ display: "flex" , width: "100%" }}>
         <NavBar onToggle={setIsNavOpen} />
@@ -250,12 +280,17 @@ const [filterType, setFilterType] = useState("all");
                 sx={{ width: '66%', }}
               />
             {csvData.length > 0 && (
-                <Button variant="contained" color="primary">
-                  <CSVLink data={csvData} filename={"incidents.csv"} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Button variant="outlined" color="primary">
+                  <CSVLink data={csvData} filename={"incidents.csv"} style={{ textDecoration: 'none', color: 'inherit' , height:"6vh" , fontSize:"12px"  }}>
                     Exporter CSV
                   </CSVLink>
                 </Button>
+
             )}
+ <Button variant="outlined" color="primary" onClick={() => exportToExcel()} style={{color: 'blue' , height:"7vh" , fontSize:"12px" }}>
+              Exporter Excel
+            </Button>
+
             
 
           </Box>
@@ -320,6 +355,15 @@ const [filterType, setFilterType] = useState("all");
     <Button onClick={confirmDelete} color="error">Supprimer</Button>
   </DialogActions>
 </Dialog>
+<Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+          <DialogTitle>Vérifier SLA</DialogTitle>
+          <DialogContent>
+            {renderSlaStatus()}
+          </DialogContent>
+          <DialogActions>
+          <Button onClick={handleCloseDialog}>Fermer</Button>
+          </DialogActions>
+        </Dialog>
 
     </div>
   );

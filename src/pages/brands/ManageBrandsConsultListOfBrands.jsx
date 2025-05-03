@@ -7,6 +7,8 @@ import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Add as Ad
 import { DataGrid } from "@mui/x-data-grid";
 import { CSVLink } from "react-csv"; // Importation du package CSVLink pour l'exportation en CSV
 import { useNavigate } from "react-router-dom";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const ManageBrandsConsultListOfBrands = () => {
   const [isNavOpen, setIsNavOpen] = useState(true);
@@ -86,6 +88,14 @@ const ManageBrandsConsultListOfBrands = () => {
       width: 300
     }
   ];
+     const exportToExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(filteredBrands);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(data, 'marques.xlsx');
+      };
 
   return (
     <div style={{ display: "flex" }}>
@@ -110,6 +120,9 @@ const ManageBrandsConsultListOfBrands = () => {
                   Exporter CSV
                 </Button>
               </CSVLink>
+               <Button variant="outlined" color="primary" onClick={() => exportToExcel()}>
+                                          Exporter Excel
+                                        </Button>
             </Grid>
 
             <Grid item xs>

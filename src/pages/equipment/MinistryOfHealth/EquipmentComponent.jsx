@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchNonReceivedEquipment } from "../../../redux/slices/equipmentSlice";
+import { fetchNonReceivedEquipment , fetchEquipmentsByHospital } from "../../../redux/slices/equipmentSlice";
 import NavBar from "../../../components/NavBar";
 import { Box, Button, TextField, InputAdornment, Grid, IconButton, CircularProgress } from "@mui/material";
 import { Search as SearchIcon, Edit as EditIcon, Add as AddIcon } from "@mui/icons-material";
@@ -8,14 +8,22 @@ import { DataGrid } from "@mui/x-data-grid";
 import { CSVLink } from "react-csv"; // Importation du package CSVLink pour l'exportation en CSV
 import { useNavigate } from "react-router-dom";
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { fetchHospitals } from "../../../redux/slices/hospitalSlice";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 
 const EquipmentComponent = () => {
   const [isNavOpen, setIsNavOpen] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [selectedHospitalId, setSelectedHospitalId] = useState("");
+
 
   // Récupérer les équipements non réceptionnés depuis Redux
-  const { nonReceivedEquipment, isLoading } = useSelector((state) => state.equipment);
+  const { nonReceivedEquipment, isLoading , equipmentList  } = useSelector((state) => state.equipment);//equipmentList c'est le state of list fetchEquipmentByHospitals
+  const { hospitals  } = useSelector((state) => state.hospital);
+
 
   // États pour la recherche et la suppression
   const [search, setSearch] = useState("");
@@ -23,34 +31,46 @@ const EquipmentComponent = () => {
 
   // Charger les équipements non réceptionnés au montage du composant
   useEffect(() => {
-    dispatch(fetchNonReceivedEquipment());
-  }, [dispatch]);
-
+     dispatch(fetchHospitals())
+    if (selectedHospitalId) {
+      dispatch(fetchEquipmentsByHospital(selectedHospitalId));
+    } else {
+      dispatch(fetchNonReceivedEquipment());
+    }
+  }, [dispatch, selectedHospitalId]);
+  
 
 
   // Filtrer les équipements en fonction de la recherche
   useEffect(() => {
+    const sourceData = selectedHospitalId ? equipmentList : nonReceivedEquipment;
     setFilteredEquipment(
-      nonReceivedEquipment.filter((equipment) =>
-      (
-        (equipment.nom?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (equipment.serialCode?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (equipment.status?.toLowerCase() || "").includes(search.toLowerCase())
-      )
+      sourceData.filter((equipment) =>
+        (
+          (equipment.nom?.toLowerCase() || "").includes(search.toLowerCase()) ||
+          (equipment.serialCode?.toLowerCase() || "").includes(search.toLowerCase()) ||
+          (equipment.status?.toLowerCase() || "").includes(search.toLowerCase())
+        )
       )
     );
-  }, [nonReceivedEquipment, search]);
+  }, [search, nonReceivedEquipment, equipmentList, selectedHospitalId]);
+  
 
   // Gérer la recherche
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
   };
-    if (isLoading) {
-            return (<>
-                <NavBar/>
-                 <CircularProgress />;
-                </>)
-          }
+  if (isLoading) {
+    return (
+      <>
+        <NavBar />
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
+          <CircularProgress />
+        </Box>
+      </>
+    );
+  }
+  
   // Colonnes pour la DataGrid
   const columns = [
     {
@@ -71,7 +91,52 @@ const EquipmentComponent = () => {
       headerName: "Statut",
       flex: 1,
       sortable: true,
+      renderCell: (params) => {
+        const status = params.value?.toLowerCase();
+    
+        let color = "#ccc";
+        let bgColor = "#eee";
+    
+        if (status === "en panne") {
+          color = "#fff";
+          bgColor = "#e53935"; // rouge
+        } else if (status === "en service") {
+          color = "#fff";
+          bgColor = "#43a047"; // vert
+        } else if (status === "en maintenance") {
+          color = "#fff";
+          bgColor = "#fb8c00"; // orange
+        } else if (status === "hors service") {
+          color = "#fff";
+          bgColor = "#757575"; // gris foncé
+        } else if (status === "en attente de réception") {
+          color = "#fff";
+          bgColor = "#1976d2"; // gris foncé
+        }
+    
+        return (
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "20px",
+                backgroundColor: bgColor,
+                color: color,
+                fontWeight: "bold",
+                textTransform: "capitalize",
+                minWidth: "155px",  // largeur minimale uniforme
+                height: "35px",     // hauteur fixe
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {params.value}
+            </span>
+          );
+          
+      },
     },
+    
     {
       field: "lifespan",
       headerName: "Durée de vie",
@@ -113,6 +178,14 @@ const EquipmentComponent = () => {
       width: 300,
     },
   ];
+    const exportToExcel = () => {
+      const worksheet = XLSX.utils.json_to_sheet(filteredEquipment);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(data, 'equipement.xlsx');
+    };
 
   return (
     <div style={{ display: "flex" }}>
@@ -130,6 +203,27 @@ const EquipmentComponent = () => {
                 Ajouter un équipement
               </Button>
             </Grid>
+            <Grid item>
+  <TextField
+    select
+    label=""
+    value={selectedHospitalId}
+    onChange={(e) => setSelectedHospitalId(e.target.value)}
+    fullWidth
+    SelectProps={{ native: true }}
+  >
+              <option value="">Équipements non réceptionnés</option>
+
+    {hospitals.map((hosp) => (
+         <>
+
+<option key={hosp.id} value={hosp.id}>
+  {hosp.name}
+</option></>
+    ))}
+  </TextField>
+</Grid>
+
 
             <Grid item>
               <CSVLink
@@ -145,10 +239,14 @@ const EquipmentComponent = () => {
                 filename="equipements_non_receptionnes.csv"
                 style={{ textDecoration: "none" }}
               >
-                <Button variant="contained" color="primary">
+                <Button variant="outlined" color="primary">
                   Exporter CSV
                 </Button>
               </CSVLink>
+               <Button variant="outlined" color="primary" onClick={() => exportToExcel()}>
+                            Exporter Excel
+                          </Button>
+              
             </Grid>
 
             <Grid item xs>

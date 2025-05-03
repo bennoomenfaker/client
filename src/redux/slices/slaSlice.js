@@ -106,9 +106,10 @@ export const checkSlaCompliance = createAsyncThunk(
         `${API_BASE_URL}/api/slas/check-compliance/${incidentId}`, 
         {}, // pas de body, juste un appel
         {
-          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          headers: {  ...getAuthHeaders() },
         }
       );
+      //console.log(response)
       return response.data; // On peut retourner l'incident mis à jour si tu veux
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur inconnue");
@@ -179,6 +180,7 @@ const slaSlice = createSlice({
       })
       .addCase(fetchSlaByEquipmentId.pending, (state) => {
         state.isLoading = true;
+        state.selectedSla = null;
       })
       .addCase(fetchSlaByEquipmentId.rejected, (state, action) => {
         state.isLoading = false;

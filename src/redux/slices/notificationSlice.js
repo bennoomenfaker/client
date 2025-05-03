@@ -17,7 +17,7 @@ export const fetchNotifications = createAsyncThunk(
       const response = await axios.get(`${API_BASE_URL}/${userId}`, {
         headers: getAuthHeaders(),
       });
-      console.log(response.data)
+      //console.log(response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur lors de la récupération des notifications");

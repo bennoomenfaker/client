@@ -37,7 +37,14 @@ const ReportIncident = () => {
   const navigate = useNavigate();
   const { serialCode, id } = useParams(); // Récupère le code série depuis l'URL.
   const hospitalId = sessionStorage.getItem("hospitalId");
-
+  
+   const [responseHours, setResponseHours] = useState(0);
+    const [responseMinutes, setResponseMinutes] = useState(0);
+    const [resolutionHours, setResolutionHours] = useState(0);
+    const [resolutionMinutes, setResolutionMinutes] = useState(0);
+    const [responseDays, setResponseDays] = useState(0);
+    const [resolutionDays, setResolutionDays] = useState(0);
+  
   useEffect(() => {
     // Vérifie si equipment est déjà chargé
     if (serialCode && !equipment) {
@@ -52,8 +59,54 @@ const ReportIncident = () => {
   useEffect(() => {
     if (sla) {
       setSlaData(sla);
+      const responseD = Math.floor(sla.maxResponseTime / (60 * 24));
+      const responseH = Math.floor((sla.maxResponseTime % (60 * 24)) / 60);
+      const responseM = sla.maxResponseTime % 60;
+      setResponseDays(responseD);
+      setResponseHours(responseH);
+      setResponseMinutes(responseM);
+  
+      const resolutionD = Math.floor(sla.maxResolutionTime / (60 * 24));
+      const resolutionH = Math.floor((sla.maxResolutionTime % (60 * 24)) / 60);
+      const resolutionM = sla.maxResolutionTime % 60;
+      setResolutionDays(resolutionD);
+      setResolutionHours(resolutionH);
+      setResolutionMinutes(resolutionM);
+    } else {
+      // Reset the form state when sla is null
+      setSlaData({
+        name: "",
+        maxResponseTime: 0,
+        maxResolutionTime: 0,
+        penaltyAmount: 0,
+        userIdCompany: "",
+      });
+      setResponseDays(0);
+      setResponseHours(0);
+      setResponseMinutes(0);
+      setResolutionDays(0);
+      setResolutionHours(0);
+      setResolutionMinutes(0);
     }
   }, [sla]);
+    useEffect(() => {
+      if (!sla) {
+        // If there is no SLA for the equipment, reset the form fields
+        setSlaData({
+          name: "",
+          maxResponseTime: 0,
+          maxResolutionTime: 0,
+          penaltyAmount: 0,
+          userIdCompany: "",
+        });
+        setResponseDays(0);
+        setResponseHours(0);
+        setResponseMinutes(0);
+        setResolutionDays(0);
+        setResolutionHours(0);
+        setResolutionMinutes(0);
+      }
+    }, [sla]);
 
   useEffect(() => {
     dispatch(resetSelectedSla());
@@ -103,10 +156,12 @@ const ReportIncident = () => {
       ...slaData,
       equipmentId: id,
       hospitalId: hospitalId,
+      maxResponseTime: responseDays * 24 * 60 + responseHours * 60 + responseMinutes,
+      maxResolutionTime: resolutionDays * 24 * 60 + resolutionHours * 60 + resolutionMinutes,
     };
     try {
       let response;
-      if (equipment.slaId) {
+      if (sla) {
         response = await dispatch(updateSla({ slaId: equipment.slaId, slaData: payload })).unwrap();
         toast.success("SLA mis à jour avec succès!");
       } else {
@@ -115,6 +170,9 @@ const ReportIncident = () => {
       }
       const newSlaId = response.id;
       await dispatch(assignSlaToEquipment({ equipmentId: id, slaId: newSlaId })).unwrap();
+      
+      // Réinitialise le SLA sélectionné après traitement
+      await dispatch(resetSelectedSla());
     } catch (error) {
       toast.error("Erreur lors de la création/mise à jour du SLA.");
     }
@@ -169,33 +227,62 @@ const ReportIncident = () => {
                     fullWidth
                     margin="normal"
                   />
-                  <TextField
-                    label="Temps de réponse max (minutes)"
-                    name="maxResponseTime"
-                    type="number"
-                    value={slaData.maxResponseTime}
-                    onChange={handleInputChange}
-                    fullWidth
-                    margin="normal"
-                  />
-                  <TextField
-                    label="Temps de résolution max (minutes)"
-                    name="maxResolutionTime"
-                    type="number"
-                    value={slaData.maxResolutionTime}
-                    onChange={handleInputChange}
-                    fullWidth
-                    margin="normal"
-                  />
-                  <TextField
-                    label="Pénalité (€)"
-                    name="penaltyAmount"
-                    type="number"
-                    value={slaData.penaltyAmount}
-                    onChange={handleInputChange}
-                    fullWidth
-                    margin="normal"
-                  />
+                    <Typography variant="subtitle1">Temps de réponse max</Typography>
+        <Box display="flex" gap={2}>
+          <TextField
+            label="Jours"
+            type="number"
+            value={responseDays}
+            onChange={(e) => setResponseDays(Number(e.target.value))}
+          />
+
+          <TextField
+            label="Heures"
+            type="number"
+            value={responseHours}
+            onChange={(e) => setResponseHours(Number(e.target.value))}
+          />
+          <TextField
+            label="Minutes"
+            type="number"
+            value={responseMinutes}
+            onChange={(e) => setResponseMinutes(Number(e.target.value))}
+          />
+        </Box>
+
+        <Typography variant="subtitle1" sx={{ mt: 2 }}>Temps de résolution max</Typography>
+        <Box display="flex" gap={2}>
+          <TextField
+            label="Jours"
+            type="number"
+            value={resolutionDays}
+            onChange={(e) => setResolutionDays(Number(e.target.value))}
+          />
+
+          <TextField
+            label="Heures"
+            type="number"
+            value={resolutionHours}
+            onChange={(e) => setResolutionHours(Number(e.target.value))}
+          />
+          <TextField
+            label="Minutes"
+            type="number"
+            value={resolutionMinutes}
+            onChange={(e) => setResolutionMinutes(Number(e.target.value))}
+          />
+        </Box>
+
+        <TextField
+          label="Pénalité (dt/h)"
+          name="penaltyAmount"
+          type="number"
+          value={slaData.penaltyAmount}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+                
                   <Select
                     label="Société de maintenance"
                     name="userIdCompany"

@@ -8,6 +8,8 @@ import { PersonAdd, Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon
 import { useNavigate } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
 import { CSVLink } from "react-csv";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const ManageUserOfHospitalAdmins = () => {
   const dispatch = useDispatch();
@@ -155,12 +157,20 @@ const ManageUserOfHospitalAdmins = () => {
       ),
     },
   ];
+   const exportToExcel = () => {
+      const worksheet = XLSX.utils.json_to_sheet(filteredUsers);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(data, 'utlisateurs.xlsx');
+    };
 
   return (
     <div style={{ display: "flex", justifyContent: 'center' }}>
       <NavBar onToggle={setIsNavOpen} />
       <div style={{ width: isNavOpen ? "calc(100% - 0px)" : "calc(100% - 60px)", transition: "width 0.3s ease", padding: "20px", marginTop: 50, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, width: '100%',ml:'-15%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, width: '100%',ml:'-8%' }}>
           <Button variant="contained" color="success" startIcon={<PersonAdd />} onClick={handleCreate} sx={{ fontSize: '10px', padding: '1%', fontWeight: 'bold', marginRight: '10px' }}>
             Créer un utilisateur
           </Button>
@@ -201,8 +211,11 @@ const ManageUserOfHospitalAdmins = () => {
             filename="utilisateurs.csv"
             style={{ textDecoration: "none" }}
           >
-            <Button variant="contained" color="primary">Exporter CSV</Button>
+            <Button variant="outlined" color="primary">Exporter CSV</Button>
           </CSVLink>
+             <Button variant="outlined" color="primary" onClick={() => exportToExcel()} style={{display:"flex",color: 'blue'  ,marginLeft:"1%" }}>
+                                  Exporter      Excel
+                                </Button>
         </Box>
 
         <div style={{ height: 460, width: "100%",marginLeft:'-8%'}}>

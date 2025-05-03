@@ -95,7 +95,7 @@ export const fetchAllIncidents = createAsyncThunk(
 export const updateIncident = createAsyncThunk(
   "incidents/updateIncident",
   async ({ incidentId, updatedData, user }, { rejectWithValue }) => {  // Ajout du paramètre 'user'
-    
+       console.log({ incidentId, updatedData, user })
     try {
       const response = await axios.put(
         `${API_BASE_URL}/incidents/update/${incidentId}`,
@@ -160,6 +160,8 @@ const incidentSlice = createSlice({
   name: "incidents",
   initialState: {
     list: [],
+    all: [],
+    listByHospitalAndService:[],
     error: null,
     isLoading: false,
   },
@@ -216,7 +218,7 @@ const incidentSlice = createSlice({
       })
       .addCase(fetchIncidentsByHospitalAndService.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.list = action.payload;
+        state.listByHospitalAndService = action.payload;
       })
       .addCase(fetchIncidentsByHospitalAndService.rejected, (state, action) => {
         state.isLoading = false;
@@ -240,7 +242,7 @@ const incidentSlice = createSlice({
       })
       .addCase(fetchAllIncidents.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.list = action.payload;
+        state.all = action.payload;
       })
       .addCase(fetchAllIncidents.rejected, (state, action) => {
         state.isLoading = false;

@@ -98,7 +98,7 @@ const ConsultOldTransfertEquipment = () => {
             separator=";"
           >
             <Button variant="outlined" color="primary">
-              Exporter CSV
+              Exporter EXCEL
             </Button>
           </CSVLink>
         </Box>

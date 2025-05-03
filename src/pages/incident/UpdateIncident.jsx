@@ -159,11 +159,12 @@ const UpdateIncident = () => {
         };
 
         try {
-            await dispatch(updateIncident({
+         const x =   await dispatch(updateIncident({
                 incidentId: incident.incident.id,
                 updatedData,
                 user: userInfo, // Utilisation de l'utilisateur authentifié
             })).unwrap();
+            console.log(x)
 
             toast.success("Incident validé avec succès.");
             navigate("/manage-incident/consultListOfIncident");

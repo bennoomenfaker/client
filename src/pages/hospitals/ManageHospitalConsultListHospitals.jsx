@@ -8,6 +8,9 @@ import { useNavigate } from "react-router-dom";
 import { Search as SearchIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon, Add as AddIcon} from "@mui/icons-material";
 import { toast } from "react-toastify";
 import { CSVLink } from "react-csv"; // Importation du package CSVLink pour l'exportation en CSV
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 
 const ManageHospitalConsultListHospitals = () => {
   const dispatch = useDispatch();
@@ -113,6 +116,14 @@ const ManageHospitalConsultListHospitals = () => {
 
     setFilteredHospitals(sortedRows);
   };
+      const exportToExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(data, 'hopitaux.xlsx');
+      };
 
   return (
     <div style={{ display: "flex" }}>
@@ -139,10 +150,13 @@ const ManageHospitalConsultListHospitals = () => {
               textDecoration:"none"
             }}
           >
-                <Button variant="contained" color="primary">
+                <Button variant="outlined" color="primary">
                 Exporter CSV
                 </Button>
           </CSVLink>
+            <Button variant="outlined" color="primary" onClick={() => exportToExcel()}>
+                                      Exporter Excel
+                                    </Button>
 
           <TextField
             label="Rechercher un hôpital"

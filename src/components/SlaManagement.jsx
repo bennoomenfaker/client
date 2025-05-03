@@ -14,7 +14,7 @@ import { assignSlaToEquipment } from "../redux/slices/equipmentSlice";
 import { createSla, fetchSlaById, resetSelectedSla, updateSla } from "../redux/slices/slaSlice";
 import { getUsersByHospitalId } from "../redux/slices/userSlice";
 
-const SlaManagement = ({ equipment,setStep  }) => {
+const SlaManagement = ({ equipment, setStep }) => {
   const dispatch = useDispatch();
   const [slaData, setSlaData] = useState({
     name: "",
@@ -27,24 +27,42 @@ const SlaManagement = ({ equipment,setStep  }) => {
   const [showForm, setShowForm] = useState(false);
   const hospitalUsers = useSelector((state) => state.user.usersByHospital);
   const sla = useSelector((state) => state.sla.selectedSla);
-  console.log(sla)
   const [responseHours, setResponseHours] = useState(0);
   const [responseMinutes, setResponseMinutes] = useState(0);
   const [resolutionHours, setResolutionHours] = useState(0);
   const [resolutionMinutes, setResolutionMinutes] = useState(0);
-  
-  const hospitalId = sessionStorage.getItem("hospitalId");
+  const [responseDays, setResponseDays] = useState(0);
+  const [resolutionDays, setResolutionDays] = useState(0);
 
+
+  const hospitalId = sessionStorage.getItem("hospitalId");
   useEffect(() => {
-    dispatch(resetSelectedSla())
+    dispatch(resetSelectedSla()); // Clear selectedSla on component mount
     dispatch(getUsersByHospitalId(hospitalId));
     if (equipment.slaId) {
-        dispatch(resetSelectedSla())
-      dispatch(fetchSlaById(equipment.slaId));
+      dispatch(fetchSlaById(equipment.slaId)); // Fetch SLA if it exists
     }
   }, [dispatch, hospitalId, equipment.slaId]);
 
   useEffect(() => {
+    if (!equipment.slaId) {
+      // If there is no SLA for the equipment, reset the form fields
+      setSlaData({
+        name: "",
+        maxResponseTime: 0,
+        maxResolutionTime: 0,
+        penaltyAmount: 0,
+        userIdCompany: "",
+      });
+      setResponseDays(0);
+      setResponseHours(0);
+      setResponseMinutes(0);
+      setResolutionDays(0);
+      setResolutionHours(0);
+      setResolutionMinutes(0);
+    }
+  }, [equipment.slaId]);
+  useEffect(() => {
     if (sla) {
       setSlaData(sla);
     }
@@ -52,21 +70,38 @@ const SlaManagement = ({ equipment,setStep  }) => {
   useEffect(() => {
     if (sla) {
       setSlaData(sla);
-  
-      // Conversion de maxResponseTime (en minutes) → heures + minutes
-      const responseH = Math.floor(sla.maxResponseTime / 60);
+      
+      const responseD = Math.floor(sla.maxResponseTime / (60 * 24));
+      const responseH = Math.floor((sla.maxResponseTime % (60 * 24)) / 60);
       const responseM = sla.maxResponseTime % 60;
+      setResponseDays(responseD);
       setResponseHours(responseH);
       setResponseMinutes(responseM);
   
-      // Conversion de maxResolutionTime (en minutes) → heures + minutes
-      const resolutionH = Math.floor(sla.maxResolutionTime / 60);
+      const resolutionD = Math.floor(sla.maxResolutionTime / (60 * 24));
+      const resolutionH = Math.floor((sla.maxResolutionTime % (60 * 24)) / 60);
       const resolutionM = sla.maxResolutionTime % 60;
+      setResolutionDays(resolutionD);
       setResolutionHours(resolutionH);
       setResolutionMinutes(resolutionM);
+    } else {
+      // Reset the form state when sla is null
+      setSlaData({
+        name: "",
+        maxResponseTime: 0,
+        maxResolutionTime: 0,
+        penaltyAmount: 0,
+        userIdCompany: "",
+      });
+      setResponseDays(0);
+      setResponseHours(0);
+      setResponseMinutes(0);
+      setResolutionDays(0);
+      setResolutionHours(0);
+      setResolutionMinutes(0);
     }
   }, [sla]);
-  
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -77,16 +112,16 @@ const SlaManagement = ({ equipment,setStep  }) => {
     e.preventDefault();
     const payload = {
       ...slaData,
-      maxResponseTime: responseHours * 60 + responseMinutes,
-      maxResolutionTime: resolutionHours * 60 + resolutionMinutes,
+      maxResponseTime: responseDays * 24 * 60 + responseHours * 60 + responseMinutes,
+      maxResolutionTime: resolutionDays * 24 * 60 + resolutionHours * 60 + resolutionMinutes,
       penaltyAmount: parseFloat(slaData.penaltyAmount),
       equipmentId: equipment.id,
       hospitalId: hospitalId,
     };
-  
+
     try {
       let response;
-      if (equipment.slaId) {
+      if (sla) {
         response = await dispatch(updateSla({ slaId: equipment.slaId, slaData: payload })).unwrap();
         toast.success("SLA mis à jour avec succès!");
       } else {
@@ -96,8 +131,11 @@ const SlaManagement = ({ equipment,setStep  }) => {
       const newSlaId = response.id;
 
       await dispatch(assignSlaToEquipment({ equipmentId: equipment.id, slaId: newSlaId })).unwrap();
-     // Passage à l'étape suivante (pièces de rechange)
-       setStep(3); // Assurez-vous que l'étape 3 correspond aux pièces de rechange
+
+      // Réinitialise le SLA sélectionné après traitement
+      await dispatch(resetSelectedSla());
+      // Passage à l'étape suivante (pièces de rechange)
+      setStep(3); // Assurez-vous que l'étape 3 correspond aux pièces de rechange
       setShowForm(true);
     } catch (error) {
       //toast.error("Erreur lors de la création/mise à jour du SLA.");
@@ -107,8 +145,8 @@ const SlaManagement = ({ equipment,setStep  }) => {
 
   const maintenanceCompanies = hospitalUsers
     ? hospitalUsers.filter(
-        (user) => user.role && user.role.name === "ROLE_MAINTENANCE_COMPANY"
-      )
+      (user) => user.role && user.role.name === "ROLE_MAINTENANCE_COMPANY"
+    )
     : [];
 
   return (
@@ -123,37 +161,51 @@ const SlaManagement = ({ equipment,setStep  }) => {
           fullWidth
           margin="normal"
         />
-       <Typography variant="subtitle1">Temps de réponse max</Typography>
-<Box display="flex" gap={2}>
-  <TextField
-    label="Heures"
-    type="number"
-    value={responseHours}
-    onChange={(e) => setResponseHours(Number(e.target.value))}
-  />
-  <TextField
-    label="Minutes"
-    type="number"
-    value={responseMinutes}
-    onChange={(e) => setResponseMinutes(Number(e.target.value))}
-  />
-</Box>
+        <Typography variant="subtitle1">Temps de réponse max</Typography>
+        <Box display="flex" gap={2}>
+          <TextField
+            label="Jours"
+            type="number"
+            value={responseDays}
+            onChange={(e) => setResponseDays(Number(e.target.value))}
+          />
 
-<Typography variant="subtitle1" sx={{ mt: 2 }}>Temps de résolution max</Typography>
-<Box display="flex" gap={2}>
-  <TextField
-    label="Heures"
-    type="number"
-    value={resolutionHours}
-    onChange={(e) => setResolutionHours(Number(e.target.value))}
-  />
-  <TextField
-    label="Minutes"
-    type="number"
-    value={resolutionMinutes}
-    onChange={(e) => setResolutionMinutes(Number(e.target.value))}
-  />
-</Box>
+          <TextField
+            label="Heures"
+            type="number"
+            value={responseHours}
+            onChange={(e) => setResponseHours(Number(e.target.value))}
+          />
+          <TextField
+            label="Minutes"
+            type="number"
+            value={responseMinutes}
+            onChange={(e) => setResponseMinutes(Number(e.target.value))}
+          />
+        </Box>
+
+        <Typography variant="subtitle1" sx={{ mt: 2 }}>Temps de résolution max</Typography>
+        <Box display="flex" gap={2}>
+          <TextField
+            label="Jours"
+            type="number"
+            value={resolutionDays}
+            onChange={(e) => setResolutionDays(Number(e.target.value))}
+          />
+
+          <TextField
+            label="Heures"
+            type="number"
+            value={resolutionHours}
+            onChange={(e) => setResolutionHours(Number(e.target.value))}
+          />
+          <TextField
+            label="Minutes"
+            type="number"
+            value={resolutionMinutes}
+            onChange={(e) => setResolutionMinutes(Number(e.target.value))}
+          />
+        </Box>
 
         <TextField
           label="Pénalité (dt/h)"
@@ -179,8 +231,9 @@ const SlaManagement = ({ equipment,setStep  }) => {
           ))}
         </Select>
         <Button type="submit" variant="contained" color="success">
-          {equipment.slaId ? "Modifier le SLA" : "Créer le SLA"}
+          {sla ? "Modifier le SLA" : "Créer le SLA"}
         </Button>
+
       </form>
     </Box>
   );
@@ -191,7 +244,7 @@ SlaManagement.propTypes = {
   equipment: PropTypes.shape({
     slaId: PropTypes.string,
     id: PropTypes.string.isRequired,
-   
+
   }).isRequired,
 };
 

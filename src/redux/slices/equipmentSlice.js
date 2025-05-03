@@ -273,7 +273,7 @@ export const deleteEquipment = createAsyncThunk(
     }
   }
 );
-// ❌ Ce n’est pas une suppression !
+//  Ce n’est pas une suppression !
 export const fetchEquipmentById = createAsyncThunk(
   "equipment/fetchEquipmentById",
   async (equipmentId, { rejectWithValue }) => {
