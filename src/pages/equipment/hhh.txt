@@ -18,6 +18,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 const NavBar = React.lazy(() => import("../../components/NavBar"));
+const CSVLink = React.lazy(() => import("react-csv").then((module) => ({ default: module.CSVLink })));
 import  SearchIcon from "@mui/icons-material/Search";
 import EditIcon  from"@mui/icons-material/Edit";
 
@@ -30,6 +31,7 @@ const ManageEquipmentConsultListEquipment = () => {
 
   const equipments = useSelector((state) => state.equipment.equipmentList);
   const servicesByHospital = useSelector((state) => state.hospitalService.serviceByHospital);
+
 
 
   const hospitalId = sessionStorage.getItem("hospitalId");
@@ -76,85 +78,29 @@ const ManageEquipmentConsultListEquipment = () => {
     (equipment.nom.toLowerCase().includes(search.toLowerCase()) ||
       equipment.serialCode.toLowerCase().includes(search.toLowerCase()))
   );
-  const columns = [
-    { field: "serialCode", headerName: "Code Série", width: 115 },
-    { field: "nom", headerName: "Nom", width: 210 , cellClassName: 'left-align-cell' },
-   {
-  field: "supplier",
-  headerName: "Fournisseur",
-  width: 140,
-  renderCell: (params) => {
-    const supplier = params.value; // c'est l'objet complet supplier
-    return supplier ? supplier.name : "Non renseigné";
-  }
-},
 
+  const columns = [
+    { field: "serialCode", headerName: "Code Série", width: 150 },
+    { field: "nom", headerName: "Nom", width: 210 , cellClassName: 'left-align-cell' },
+    { field: "supplier", headerName: "Fournisseur", width: 140 },
     { field: "riskClass", headerName: "Classe de Risque", width: 125 },
     { field: "amount", headerName: "Montant (dt)", width: 120, type: "number" },
     { field: "lifespan", headerName: "Durée de vie (ans)", width: 110, type: "number" },
-{
-  field: "fromMinistere",
-  headerName: "Origine",
-  width: 100,
- renderCell: (params) => (
-  <span style={{ color: params.value ? "green" : "blue", fontWeight: "bold" }}>
-    {params.value ? "Ministère" : "Fournisseur"}
-  </span>
-)
-
-}
-,
- {
+    {
       field: "status",
       headerName: "Statut",
-      sortable: true,
-      width: 100,
+      width: 140,
       renderCell: (params) => {
-        const status = params.value?.toLowerCase();
-    
-        let color = "#ccc";
-        let bgColor = "#eee";
-    
-        if (status === "en panne") {
-          color = "#fff";
-          bgColor = "#e53935"; // rouge
-        } else if (status === "en service") {
-          color = "#fff";
-          bgColor = "#43a047"; // vert
-        } else if (status === "en maintenance") {
-          color = "#fff";
-          bgColor = "#fb8c00"; // orange
-        } else if (status === "hors service") {
-          color = "#fff";
-          bgColor = "#757575"; // gris foncé
-        } else if (status === "en attente de réception") {
-          color = "#fff";
-          bgColor = "#1976d2"; // gris foncé
-        }
-    
-        return (
-            <span
-              style={{
-                padding: "6px 12px",
-                borderRadius: "40px",
-                backgroundColor: bgColor,
-                color: color,
-                fontWeight: "bold",
-                textTransform: "capitalize",
-                minWidth: "155px",  // largeur minimale uniforme
-                height: "35px",     // hauteur fixe
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {params.value}
-            </span>
-          );
-          
+        const statusColors = {
+          "en attente de réception": "gray",
+          "en service": "green",
+          "en panne": "red",
+          "en maintenance": "orange",
+          "hors service": "darkred"
+        };
+        return <div style={{ color: statusColors[params.value] || "black" }}>{params.value}</div>;
       },
     },
-    
     {
       
         field: "actions",
@@ -218,99 +164,69 @@ const ManageEquipmentConsultListEquipment = () => {
     <div style={{ display: "flex" }}>
       <NavBar onToggle={setIsNavOpen} />
       <div style={{ width: '90%', padding: '10px', marginTop: 60 }}>
-    <Box
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 , ml:"-5%" , width:"100%"}}>
+          {/* Bouton Ajouter un équipement */}
+          {role !== "ROLE_SERVICE_SUPERVISOR" && (
+          <Button sx={{width:"30%"}}
+            variant="contained"
+            color="success"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/manage-equipments/add-new-equipment-to-hospital")}
+          >
+            Ajouter un équipement
+          </Button>
+          )}
+
+          {/*  Supprimer le Select si ROLE_SERVICE_SUPERVISOR */}
+          {role !== "ROLE_SERVICE_SUPERVISOR" && (
+            <Select sx={{width:"70%"}} value={selectedService} onChange={handleServiceChange} displayEmpty>
+              <MenuItem value="" ><em>Sélectionner un service</em></MenuItem>
+              {servicesByHospital.map((service) => (
+                <MenuItem key={service.id} value={service.id}>{service.name}</MenuItem>
+              ))}
+            </Select>
+          )}
+
+          {/* Champ de recherche */}
+          <TextField 
+            label="Rechercher un équipement"
+            variant="outlined"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ flexGrow: 1  , width:"100%" }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
+            }}
+          />
+
+          {/* Bouton Export CSV */}
+          <CSVLink  data={filteredEquipments} headers={[
+            { label: "Code Série", key: "serialCode" },
+            { label: "Nom", key: "nom" },
+            { label: "Fournisseur", key: "supplier" },
+            { label: "Classe de Risque", key: "riskClass" },
+            { label: "Montant (dt)", key: "amount" },
+            { label: "Durée de vie (ans)", key: "lifespan" },
+            { label: "Statut", key: "status" },
+          ]} filename="equipements.csv">
+            <Button variant="outlined" color="primary"  sx={{width:"140%" , height:"8vh"}}>Exporter CSV</Button>
+          </CSVLink>
+           <Button variant="outlined" color="primary" onClick={() => exportToExcel()} style={{display:"flex" , height:"7vh",width:"400px", marginLeft:"5%" }}>
+                        Exporter      Excel
+                      </Button>
+      
+
+        </Box>
+         {isLoading ? (
+                    <Box sx={{ display: "flex",alignItems: "center", justifyContent: "center", height: 400 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) :(
+        <DataGrid style={{marginLeft:'-5%'}} 
+       
   sx={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 1,
-    mb: 2,
-    width: '105.5%',
-    marginLeft:'-5%'
-  
-  }}
->
-  {/* Ajouter un équipement */}
-  {role !== "ROLE_SERVICE_SUPERVISOR" && (
-    <Box sx={{ flex: 1, minWidth: 200 }}>
-      <Button
-        fullWidth
-        variant="contained"
-        color="success"
-        startIcon={<AddIcon />}
-        onClick={() => navigate("/manage-equipments/add-new-equipment-to-hospital")}
-        sx={{ height: '56px' }}
-      >
-        Ajouter un équipement
-      </Button>
-    </Box>
-  )}
-
-  {/* Select Service */}
-  {role !== "ROLE_SERVICE_SUPERVISOR" && (
-    <Box sx={{ flex: 1, minWidth: 200 }}>
-      <Select
-        value={selectedService}
-        onChange={handleServiceChange}
-        displayEmpty
-        fullWidth
-        sx={{ height: '56px' }}
-      >
-        <MenuItem value="">
-          <em>Sélectionner un service</em>
-        </MenuItem>
-        {servicesByHospital.map((service) => (
-          <MenuItem key={service.id} value={service.id}>
-            {service.name}
-          </MenuItem>
-        ))}
-      </Select>
-    </Box>
-  )}
-
-  {/* Champ de recherche */}
-  <Box sx={{ flex: 2, minWidth: 250 }}>
-    <TextField
-      fullWidth
-      label="Rechercher un équipement"
-      variant="outlined"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      sx={{ height: '56px' }}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon />
-          </InputAdornment>
-        ),
-      }}
-    />
-  </Box>
-
-  {/* Export Excel */}
-  <Box sx={{ flex: 1, minWidth: 180 }}>
-    <Button
-      fullWidth
-      variant="outlined"
-      color="primary"
-      onClick={exportToExcel}
-      sx={{ height: '56px' }}
-    >
-      Exporter Excel
-    </Button>
-  </Box>
-</Box>
-
-                <div style={{ height: 470, width: "105.4%" , marginLeft:"-5%"}}>
-
-         <DataGrid
-                    rows={filteredEquipments}
-                    columns={columns}
-                    paginationMode="client"
-                    pageSize={5}
-                    disableSelectionOnClick
-                    loading={isLoading}
-                      sx={{
-    width: '100%',
+    width: '104%',
+    overflowX: 'auto',
     '& .MuiDataGrid-cell': {
       borderRight: '1px solid rgba(0, 0, 0, 0.1)',
       display: 'flex',
@@ -335,10 +251,12 @@ const ManageEquipmentConsultListEquipment = () => {
             },
             
   }}
-                  />
+  rows={filteredEquipments} columns={columns} pageSize={20} getRowId={(row) => row.id} autoHeight    rowsPerPageOptions={[20, 50, 100]}
+  pagination disableColumnResize={true}
+    columnHeaderHeight={40}  
+/>)}
 
 
-</div>
 
         {/* Dialog de confirmation de suppression */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>

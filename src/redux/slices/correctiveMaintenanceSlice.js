@@ -43,7 +43,6 @@ export const fetchCorrectiveMaintenancesByCompany = createAsyncThunk(
 export const updateCorrectiveMaintenance = createAsyncThunk(
   "correctiveMaintenances/update",
   async ({ id, maintenanceData }, { rejectWithValue }) => {
-    console.log(maintenanceData)
     try {
       const response = await axios.put(`${API_BASE_URL}/corrective-maintenances/${id}`, maintenanceData, {
         headers: {
@@ -73,15 +72,35 @@ export const deleteCorrectiveMaintenance = createAsyncThunk(
   }
 );
 
+// Récupérer les maintenances correctives par hospitalId
+export const fetchCorrectiveMaintenancesByHospital = createAsyncThunk(
+  "correctiveMaintenances/fetchByHospital",
+  async (hospitalId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/corrective-maintenances/by-hospital/${hospitalId}`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur lors de la récupération des maintenances de l'hôpital.");
+    }
+  }
+);
+
+
 const correctiveMaintenanceSlice = createSlice({
   name: "correctiveMaintenances",
   initialState: {
     list: [],
     isLoading: false,
     error: null,
+    listCorr : []
   },
   reducers: {
     clearMaintenanceError: (state) => {
+      state.error = null;
+    },
+     clearMaintenance: (state) => {
       state.error = null;
     },
   },
@@ -113,6 +132,7 @@ const correctiveMaintenanceSlice = createSlice({
 
       .addCase(updateCorrectiveMaintenance.fulfilled, (state, action) => {
         const updated = action.payload;
+        console.log(updated)
         state.list = state.list.map((m) => (m.id === updated.id ? updated : m));
       })
       .addCase(updateCorrectiveMaintenance.rejected, (state, action) => {
@@ -124,7 +144,19 @@ const correctiveMaintenanceSlice = createSlice({
       })
       .addCase(deleteCorrectiveMaintenance.rejected, (state, action) => {
         state.error = action.payload;
-      });
+      })
+      .addCase(fetchCorrectiveMaintenancesByHospital.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchCorrectiveMaintenancesByHospital.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.listCorr = action.payload;
+})
+.addCase(fetchCorrectiveMaintenancesByHospital.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+});
+
   },
 });
 

@@ -48,7 +48,7 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
                 toast.warning("Tous les champs sont obligatoires !");
                 return false;
             }
-
+            
             const planDate = new Date(maintenanceDate);
             if (planDate <= today) {
                 toast.warning("La date de maintenance doit être strictement future !");

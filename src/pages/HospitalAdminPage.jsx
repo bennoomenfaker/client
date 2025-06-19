@@ -8,11 +8,13 @@ import { useEffect, useState } from "react";
 import IncidentsParService from "./dashboard/IncidentsParService";
 import EquipementsParService from "./dashboard/EquipementsParService";
 import StatutsIncidents from "./dashboard/StatutsIncidents";
-import IncidentsParEquipement from "./dashboard/IncidentsParEquipement";
 import EvolutionIncidents from "./dashboard/EvolutionIncidents";
 import EquipementsParStatut from "./dashboard/EquipementsParStatut ";
-import { Box, Grid, Typography } from "@mui/material";
+import { Box, Grid, Paper, Typography } from "@mui/material";
 import EquipmentsByBrandChart from "./dashboard/EquipmentsByBrandChart ";
+import { fetchAllMaintenancePlansByHospital } from "../redux/slices/maintenancePlanSlice ";
+import { fetchCorrectiveMaintenancesByHospital } from "../redux/slices/correctiveMaintenanceSlice";
+import MaintenanceCalendar from "./dashboard/MaintenanceCalendar"
 
 const HospitalAdminPage = () => {
   const hospitalId = sessionStorage.getItem("hospitalId");
@@ -25,14 +27,14 @@ const HospitalAdminPage = () => {
   const { equipmentList, isLoading: isEquipmentLoading } = useSelector(
     (state) => state.equipment
   );
-  const serviceByHospital = useSelector(
-    (state) => state.hospitalService.serviceByHospital
-  );
 
+   
   // Log des données pour vérifier leur contenu
-  console.log("Equipements:", equipmentList);
-  console.log("Incidents:", allIncidents);
-  console.log("Services:", serviceByHospital);
+  //console.log("Equipements:", equipmentList);
+  //console.log("Incidents:", allIncidents);
+  //console.log("Services:", serviceByHospital);
+  //console.log("maintenanceplans:" , maintenancesPlans);
+   //console.log("correctives maintenances:", corrcMaintenance);
 
   // Dispatch pour récupérer les données nécessaires
   const dispatch = useDispatch();
@@ -42,6 +44,8 @@ const HospitalAdminPage = () => {
     dispatch(fetchIncidentsByHospital(hospitalId));
     dispatch(fetchServicesByHospitalId(hospitalId));
     dispatch(fetchEquipmentsByHospital(hospitalId));
+    dispatch(fetchAllMaintenancePlansByHospital(hospitalId));
+    dispatch(fetchCorrectiveMaintenancesByHospital(hospitalId))
   }, [dispatch, hospitalId]);
 
 
@@ -61,46 +65,84 @@ const HospitalAdminPage = () => {
     incidentCount: incidentsByService[service],
   }));
 
-  return (
-    <div style={{ display: "flex" }}>
+ return (
+    <Box sx={{ display: "flex", minHeight: '100vh' , mt: 8 , ml:-4 }}>
       <NavBar onToggle={isNavOpen} />
-      <div style={{ width: '90%', padding: '10px', marginTop: 60 }}>
-        <Typography p={2} color="blue" style={{fontSize:"25px", fontWeight:"bold"}}>Tableau de bord des incidents et équipements</Typography>
+      
+      <Box component="main" >
+        <Box sx={{ 
+          maxWidth: 1800,
+          mx: 'auto'
+        }}>
+          {/* Header */}
+          <Box sx={{ 
+            mb: 4,
+            p: 3,
+            backgroundColor: 'white',
+            borderRadius: 3,
+            boxShadow: 2
+          }}>
+            <Typography variant="h4" sx={{ 
+              color: 'primary.main',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              textAlign: 'center',
+            }}>
+              Statistique des incidents et équipements
+            </Typography>
+          </Box>
 
-        {/* Passer les données formatées à chaque graphique */}
-        <Box mb={3}>
-        <IncidentsParService data={incidentsServiceData} />
-      </Box>
+          {/* Main Content */}
+          <Grid container spacing={4}>
+            {/* Calendrier en pleine largeur */}
+            <Grid item xs={12}>
+              <MaintenanceCalendar />
+            </Grid>
 
-      <Box mb={3}>
-        <EquipementsParService data={equipmentList} />
-      </Box>
+            {/* Première ligne de graphiques */}
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+                <IncidentsParService data={incidentsServiceData} />
+              </Paper>
+            </Grid>
 
-      <Box mb={3}>
-        <StatutsIncidents data={allIncidents} />
-      </Box>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+                <EquipementsParService data={equipmentList} />
+              </Paper>
+            </Grid>
 
-      <Box mb={3}>
-        <IncidentsParEquipement data={allIncidents} />
-      </Box>
+            {/* Deuxième ligne de graphiques */}
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+                <StatutsIncidents data={allIncidents} />
+              </Paper>
+            </Grid>
 
-      <Box mb={3}>
-        <EvolutionIncidents data={allIncidents} />
-      </Box>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+                <EquipementsParStatut data={equipmentList} />
+              </Paper>
+            </Grid>
 
-      <Box mb={3}>
-        <EquipementsParStatut data={equipmentList} />
-      </Box>
+            
 
-      <Grid item xs={12} md={6}>
-        <Box mb={3}>
-          <EquipmentsByBrandChart />
+            {/* Graphique en pleine largeur */}
+            <Grid item xs={12} >
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+                <EquipmentsByBrandChart />
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 3 }}>
+                <EvolutionIncidents data={allIncidents} />
+              </Paper>
+            </Grid>
+          </Grid>
         </Box>
-      </Grid>
-
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
-
 export default HospitalAdminPage;

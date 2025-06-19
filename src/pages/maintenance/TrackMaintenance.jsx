@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import NavBar from '../../components/NavBar';
 import { useSelector, useDispatch } from 'react-redux';
-import { CircularProgress, Alert, Typography, Grid, TextField, InputAdornment, Button, IconButton, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { CircularProgress, Alert, Typography, Grid, TextField, InputAdornment, Button, IconButton,  Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { fetchAllMaintenancePlansByHospital, } from '../../redux/slices/maintenancePlanSlice ';
 import { fetchEquipmentsByHospital } from "../../redux/slices/equipmentSlice";
@@ -9,7 +9,6 @@ import { DataGrid } from '@mui/x-data-grid';
 import { CSVLink } from 'react-csv';
 import { useNavigate } from 'react-router-dom';
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { fetchSparePartById } from '../../redux/slices/sparePartSlice';
 
 export default function TrackMaintenance() {
     const [isNavOpen, setIsNavOpen] = useState(true);
@@ -19,7 +18,6 @@ export default function TrackMaintenance() {
     const hospitalId = sessionStorage.getItem('hospitalId');
     const [search, setSearch] = useState('');
     const navigate = useNavigate();
-    const [filterType, setFilterType] = useState('all');
     const [filteredMaintennace, setFilteredMaintenance] = useState([]);
 
     useEffect(() => {
@@ -33,36 +31,31 @@ export default function TrackMaintenance() {
           return equipment ? equipment.serialCode : null;
       }, [equipmentList]);
 
-    useEffect(() => {
+      useEffect(() => {
         let filtered = maintenancePlans;
+    
+        // Nouveau filtre : exclure les maintenances avec un sparePartId défini
+        filtered = filtered.filter(row => 
+            !row.sparePartId  // garde seulement les lignes sans sparePartId
+        );
+    
+        // Ensuite appliquer la recherche (si nécessaire)
         const searchText = search.toLowerCase();
-
-        if (filterType === 'equipment') {
-            filtered = filtered.filter(row => row.equipmentId);
-        } else if (filterType === 'sparePart') {
-            filtered = filtered.filter(row => row.sparePartId);
-        }
-
         filtered = filtered.filter(row => {
             return (
                 (row.description && row.description.toLowerCase().includes(searchText)) ||
                 (row.equipmentId && row.equipmentId.toLowerCase().includes(searchText)) ||
-                (row.sparePartId && row.sparePartId.toLowerCase().includes(searchText)) ||
                 getSerialCodeByEquipmentId(row.equipmentId)?.toLowerCase().includes(searchText)
             );
         });
+    
         setFilteredMaintenance(filtered);
-    }, [maintenancePlans, search, filterType, equipmentList, getSerialCodeByEquipmentId]);
+    }, [maintenancePlans, search, equipmentList, getSerialCodeByEquipmentId]);
 
     const handleSearchChange = (event) => {
         setSearch(event.target.value);
     };
 
-    const handleFilterChange = (event, newFilter) => {
-        if (newFilter !== null) {
-            setFilterType(newFilter);
-        }
-    };
 
 
 
@@ -83,14 +76,12 @@ export default function TrackMaintenance() {
             field: 'equipmentId',
             headerName: 'Équipement',
             width: 120,
-            renderCell: (params) => (params.row.equipmentId ? 'Oui' : ''),
-        },
-        {
-            field: 'sparePartId',
-            headerName: 'Pièce de rechange',
-            width: 150,
-            renderCell: (params) => (params.row.sparePartId ? 'Oui' : ''),
-        },
+            renderCell: (params) => (
+                <Box display="flex" alignItems="center" height="100%">
+                    {getSerialCodeByEquipmentId(params.row.equipmentId) || '-'}
+                </Box>
+            )        },
+       
         {
             field: 'actions',
             headerName: 'Actions',
@@ -104,24 +95,7 @@ export default function TrackMaintenance() {
     <VisibilityIcon color="primary" />         
                        </IconButton>
                         )}
-                        {params.row.sparePartId && (
-                            <IconButton
-                                color="info"
-                                onClick={async () => {
-                                    try {
-                                        const actionResult = await dispatch(fetchSparePartById(params.row.sparePartId));
-                                        const fetchedSparePart = actionResult.payload;
-                                        navigate(`/manage-equipment/update-equipment/equipmentId/${params.row.sparePartId}/editSparePart`, {
-                                            state: { sparePart: fetchedSparePart },
-                                        });
-                                    } catch (error) {
-                                        console.error('Erreur lors de la récupération de la pièce de rechange:', error);
-                                    }
-                                }}
-                            >
-    <VisibilityIcon color="primary" />         
-    </IconButton>
-                        )}
+                     
                        
                     </>
                 );
@@ -169,24 +143,8 @@ export default function TrackMaintenance() {
                 </Grid>
 
                 <Grid container spacing={2} alignItems="center" marginBottom={2}>
-                    <Grid item>
-                        <ToggleButtonGroup
-                            value={filterType}
-                            exclusive
-                            onChange={handleFilterChange}
-                            aria-label="text alignment"
-                        >
-                            <ToggleButton value="all" aria-label="left aligned">
-                                Tous
-                            </ToggleButton>
-                            <ToggleButton value="equipment" aria-label="centered">
-                                Équipements
-                            </ToggleButton>
-                            <ToggleButton value="sparePart" aria-label="right aligned">
-                                Pièces de rechange
-                            </ToggleButton>
-                        </ToggleButtonGroup>
-                    </Grid>
+                       
+                   
                     <Grid item xs>
                         <TextField
                             label="Rechercher"

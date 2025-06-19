@@ -53,7 +53,14 @@ import ConsultCoorectiveMaintenance from './pages/CorrectveMaintennace/ConsultCo
 import ConsultSlaByProvider from './pages/SLA/ConsultSlaByProvider';
 import ConsultOldTransfertEquipment from './pages/equipment/ConsultOldTransfertEquipment';
 import ConsultListIncidentByMS from './pages/incident/ConsultListIncidentByMS';
-
+import ManageSuplliersConsultListSuppliers from './pages/supplier/ManageSuplliersConsultListSuppliers';
+import ManageSuppliersUpdateSupplier from './pages/supplier/ManageSuppliersUpdateSupplier';
+import ConsultListOfSpareParts from './pages/equipment/spareParts/ConsultListOfSpareParts';
+import ManageSparePartsCreateNewSparePart from './pages/equipment/spareParts/ManageSparePartsCreateNewSparePart';
+import UpdateSpart from './pages/equipment/spareParts/UpdateSpart';
+import ConsultSLAByHospitalId from './pages/SLA/ConsultSLAByHospitalId';
+import UpdateSLA from './pages/SLA/UpdateSLA';
+import ManageSuppliersCreateSupplier from './pages/supplier/ManageSuppliersCreateSupplier';
 
 function App() {
   const profile = useSelector((state) => state.auth.user);
@@ -193,6 +200,11 @@ function App() {
           path="/manage-equipment/equipments"
           element={isAuth ? (profile.ministryAdmin ? <EquipmentComponent /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
+          <Route
+          path="/manageSparePart/consultListSpareParts"
+          element={isAuth ? (profile.hospitalAdmin || profile.maintenanceCompanyStaff || profile.maintenanceEngineer ? <ConsultListOfSpareParts /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+        
 
         <Route
           path="manage-equipment/create-new-equipment"
@@ -229,9 +241,17 @@ function App() {
           path={`/manage-equipment/update-equipment/equipmentId/:id/addSpareParts`}
           element={isAuth ? (profile.hospitalAdmin ? <ManageSparePartsCreateNewSpareParts /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
+         <Route
+          path={`/manage-spareParts/addSparePart`}
+          element={isAuth ? (profile.hospitalAdmin ? <ManageSparePartsCreateNewSparePart /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
         <Route
           path={`/manage-equipment/update-equipment/equipmentId/:id/editSparePart`}
           element={isAuth ? (profile.hospitalAdmin ||profile.maintenanceEngineer || profile.maintenanceCompanyStaff ? <ManageSparePartsUpdateSpareParts /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+        <Route
+          path={`/manage-equipment/update-equipment/equipmentId/:id/editSpareParts`}
+          element={isAuth ? (profile.hospitalAdmin ||profile.maintenanceEngineer ? <UpdateSpart /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
 
         <Route
@@ -250,6 +270,11 @@ function App() {
          <Route
           path={`/manage-equipment/consultOldTransfertEquipment`}
           element={isAuth ? (profile.hospitalAdmin || profile.maintenanceEngineer ? <ConsultOldTransfertEquipment /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+        
+      <Route
+          path={`/manage-supplier/suppliers`}
+          element={isAuth ? (profile.hospitalAdmin || profile.maintenanceEngineer ? <ManageSuplliersConsultListSuppliers/> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
 
         <Route
@@ -306,11 +331,44 @@ function App() {
           element={isAuth ? (profile.maintenanceCompanyStaff  ? <ConsultSlaByProvider /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
      
+     
+<Route
+          path={`/manageSla/consltSlaByMaintennaceByHospitalId`}
+          element={isAuth ? (profile.hospitalAdmin || profile.maintenanceEngineer  ? < ConsultSLAByHospitalId /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+        
+<Route
+          path={`/manageSla/edit/:id/equipment/:serialCode`}
+          element={isAuth ? (profile.hospitalAdmin || profile.maintenanceEngineer  ? < UpdateSLA /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
+     
         
 <Route
           path={`manage-incident/consultListOfIncidentByMS`}
           element={isAuth ? (profile.ministryAdmin  ? <ConsultListIncidentByMS /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
+
+<Route
+  path="/manage-supplier/update-supplier/:id"
+  element={
+    isAuth
+      ? (profile.hospitalAdmin || profile.maintenanceEngineer)
+        ? <ManageSuppliersUpdateSupplier />
+        : <Navigate to="/401" replace />
+      : <Navigate to="/" replace />
+  }
+/>
+<Route
+  path="/manage-supplier/add"
+  element={
+    isAuth
+      ? (profile.hospitalAdmin || profile.maintenanceEngineer)
+        ? <ManageSuppliersCreateSupplier />
+        : <Navigate to="/401" replace />
+      : <Navigate to="/" replace />
+  }
+/>
+
 
         
 

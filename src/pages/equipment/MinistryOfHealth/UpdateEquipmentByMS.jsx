@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { fetchEMDNCodes } from "../../../redux/slices/emdnNomenclatureSlice";
 import { fetchHospitals } from "../../../redux/slices/hospitalSlice";
 import { fetchEquipmentBySerial, updateEquipment, updateMaintenancePlansForEquipment } from "../../../redux/slices/equipmentSlice";
-import { CircularProgress, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, Autocomplete, Stepper, Step, StepLabel, Paper, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox, FormControlLabel } from "@mui/material";
+import { CircularProgress, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, Autocomplete, Stepper, Step, StepLabel, Paper, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox, FormControlLabel, FormLabel } from "@mui/material";
 import { toast } from "react-toastify";
 import { fetchBrandsByHospital } from "../../../redux/slices/brandsSlice";
 import { fetchServicesByHospitalId } from "../../../redux/slices/hospitalServiceSlice";
@@ -13,9 +13,10 @@ import { deleteMaintenancePlan } from "../../../redux/slices/maintenancePlanSlic
 import SlaManagement from "../../../components/SlaManagement";
 import SpareParts from '../../../components/SpareParts'
 import { getProfile } from "../../../redux/slices/authSlice";
+import {fetchSuppliersByHospital}  from '../../../redux/slices/supplierSlice'
 
 const riskClasses = ["1", "2a", "2b", "3"];
-const allStatus  = ["en attente de réception", "en service", "en panne", "en maintenance", "hors service"]
+const allStatus = ["en attente de réception", "en service", "en panne", "en maintenance", "hors service"]
 
 const UpdateEquipmentByMS = () => {
     const dispatch = useDispatch();
@@ -30,20 +31,31 @@ const UpdateEquipmentByMS = () => {
     const brands = useSelector((state) => state.brand.brandList);
     const servicesByHospital = useSelector((state) => state.hospitalService.serviceByHospital);
     const [reception, setReception] = useState(false); // New state for reception checkbox
-
+     const suppliers = useSelector((state)=>state.supplier.suppliers)
     const hospitalId = sessionStorage.getItem("hospitalId");
     const userRole = sessionStorage.getItem("role");
     const isAdmin = userRole === "ROLE_HOSPITAL_ADMIN";
-    const isCompany = userRole ==="ROLE_MAINTENANCE_COMPANY"
-    const isEngeering = userRole ==="ROLE_MAINTENANCE_ENGINEER"
+    const isCompany = userRole === "ROLE_MAINTENANCE_COMPANY"
+    const isEngeering = userRole === "ROLE_MAINTENANCE_ENGINEER"
+    const isMS = userRole ==="ROLE_MINISTRY_ADMIN"
 
     const [equipmentFormData, setEquipmentFormData] = useState({});
     const [maintenancePlans, setMaintenancePlans] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [planIndexToRemove, setPlanIndexToRemove] = useState(null);
+    const [additionalDuration, setAdditionalDuration] = useState({ hours: 0, minutes: 0 });
+    const formatDuration = (totalMinutes) => {
+        const days = Math.floor(totalMinutes / (24 * 60));
+        const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+        const minutes = totalMinutes % 60;
+        return `${days}j ${hours}h ${minutes}min`;
+    };
 
-
-    
+useEffect(() => {
+  if (hospitalId) {
+    dispatch(fetchSuppliersByHospital(hospitalId));
+  }
+}, [dispatch, hospitalId]);
 
 
     useEffect(() => {
@@ -57,6 +69,7 @@ const UpdateEquipmentByMS = () => {
             dispatch(fetchBrandsByHospital(hospitalId));
             dispatch(fetchServicesByHospitalId(hospitalId));
         }
+
     }, [dispatch, serialCode, hospitalId, userRole]);
 
     useEffect(() => {
@@ -76,6 +89,12 @@ const UpdateEquipmentByMS = () => {
                 serviceId: equipment.serviceId || null,
                 startDateWarranty: equipment.startDateWarranty ? equipment.startDateWarranty.split("T")[0] : '',
                 endDateWarranty: equipment.endDateWarranty ? equipment.endDateWarranty.split("T")[0] : '',
+                lastUsedAt: equipment.lastUsedAt
+                    ? new Date(equipment.lastUsedAt).toISOString().slice(0, 16)
+                    : '',
+                fromMinistere: equipment.fromMinistere,
+
+
             });
             setReception(equipment.reception || false); // Set the initial value for the reception checkbox
 
@@ -102,11 +121,23 @@ const UpdateEquipmentByMS = () => {
 
     const handleEquipmentChange = (event) => {
         const { name, value } = event.target;
-        setEquipmentFormData((prevData) => ({
-            ...prevData,
-            [name]: value,
-        }));
+
+        // Si on change le status vers "en service" et que réception est false
+        if (name === "status" && value === "en service" && !reception) {
+            setReception(true);
+            setEquipmentFormData((prevData) => ({
+                ...prevData,
+                [name]: value,
+                reception: true // On met aussi reception à true dans les données envoyées
+            }));
+        } else {
+            setEquipmentFormData((prevData) => ({
+                ...prevData,
+                [name]: value,
+            }));
+        }
     };
+
 
     const handleEquipmentSubmit = async (event) => {
         event.preventDefault();
@@ -117,7 +148,8 @@ const UpdateEquipmentByMS = () => {
 
         const formDataWithBrandName = {
             ...equipmentFormData,
-            brand: equipmentFormData.brand ? equipmentFormData.brand.name : '' // Assuming brand has 'name'
+            brand: equipmentFormData.brand ? equipmentFormData.brand.name : '' ,
+             supplierId: equipmentFormData.supplier?.id || null, 
         };
 
         try {
@@ -183,8 +215,8 @@ const UpdateEquipmentByMS = () => {
         } else {
             // Si l'ID n'est pas disponible (nouveau plan non sauvegardé), supprimer localement
             dispatch(deleteMaintenancePlan({ maintenancePlanId: planToRemove.id }))
-            
-          
+
+
             const updatedPlans = [...maintenancePlans];
             updatedPlans.splice(planIndexToRemove, 1);
             setMaintenancePlans(updatedPlans);
@@ -203,7 +235,7 @@ const UpdateEquipmentByMS = () => {
             toast.warning("Veuillez remplir tous les champs obligatoires pour les plans de maintenance.");
             return;
         }
-   
+
         try {
 
 
@@ -217,7 +249,7 @@ const UpdateEquipmentByMS = () => {
             } else {
                 navigate("/manage-equipment/equipments");
             }
-            if(isCompany){
+            if (isCompany) {
                 navigate("/manage-maintenance/trackMaintenance");
 
             }
@@ -251,7 +283,7 @@ const UpdateEquipmentByMS = () => {
 
     const steps = ["Modifier l'équipement", "Planifier la maintenance", "SLA", "Pièces de rechange"];
     // Add this condition to disable the fields
-    const shouldDisableFields = isAdmin || isCompany || isEngeering;
+const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
     return (
         <div style={{ display: "flex" }}>
             <NavBar onToggle={setIsNavOpen} />
@@ -328,50 +360,50 @@ const UpdateEquipmentByMS = () => {
                                     ))}
                                 </Select>
                             </FormControl>
-                           
-                                  
-                                    <TextField
-                                        label="Montant d'acquisition"
-                                        name="amount"
-                                        type="number"
-                                        value={equipmentFormData.amount}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} 
-                                        disabled={shouldDisableFields}
-                                    />
-                                    <TextField
-                                        label="Date d'acquisition"
-                                        name="acquisitionDate"
-                                        type="date"
-                                        value={equipmentFormData.acquisitionDate}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} 
-                                        disabled={shouldDisableFields}
-                                    />
-                                   
-                                  
-                                    <TextField
-                                        label="Date de début de garantie"
-                                        name="startDateWarranty"
-                                        type="date"
-                                        value={equipmentFormData.startDateWarranty}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} 
-                                        disabled={shouldDisableFields}
-                                    />
-                                    <TextField
-                                        label="Date de fin de garantie"
-                                        name="endDateWarranty"
-                                        type="date"
-                                        value={equipmentFormData.endDateWarranty}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }}
-                                        disabled={shouldDisableFields}
-                                    />
-                                   
-                                     {isAdmin && (
+
+
+                            <TextField
+                                label="Montant d'acquisition"
+                                name="amount"
+                                type="number"
+                                value={equipmentFormData.amount}
+                                onChange={handleEquipmentChange}
+                                InputLabelProps={{ shrink: true }}
+                                disabled={shouldDisableFields}
+                            />
+                            <TextField
+                                label="Date d'acquisition"
+                                name="acquisitionDate"
+                                type="date"
+                                value={equipmentFormData.acquisitionDate}
+                                onChange={handleEquipmentChange}
+                                InputLabelProps={{ shrink: true }}
+                                disabled={shouldDisableFields}
+                            />
+
+
+                            <TextField
+                                label="Date de début de garantie"
+                                name="startDateWarranty"
+                                type="date"
+                                value={equipmentFormData.startDateWarranty}
+                                onChange={handleEquipmentChange}
+                                InputLabelProps={{ shrink: true }}
+                                disabled={shouldDisableFields}
+                            />
+                            <TextField
+                                label="Date de fin de garantie"
+                                name="endDateWarranty"
+                                type="date"
+                                value={equipmentFormData.endDateWarranty}
+                                onChange={handleEquipmentChange}
+                                InputLabelProps={{ shrink: true }}
+                                disabled={shouldDisableFields}
+                            />
+
+                            {isAdmin && (
                                 <>
-                                 <Autocomplete
+                                    <Autocomplete
                                         options={brands}
                                         getOptionLabel={(option) => option.name || ""}
                                         value={equipmentFormData.brand ? brands.find(brand => brand.id === equipmentFormData.brand.id) : null}
@@ -383,29 +415,109 @@ const UpdateEquipmentByMS = () => {
                                         }}
                                         renderInput={(params) => <TextField {...params} label="Marque" variant="outlined" />}
                                     />
-                                      <TextField
-                                        label="Fournisseur"
-                                        name="supplier"
-                                        value={equipmentFormData.supplier}
+   <Autocomplete
+    options={suppliers}
+    getOptionLabel={(option) => option.name || ""}
+    value={
+        suppliers.find((supplier) => supplier.id === equipmentFormData?.supplier?.id) || null
+    }
+    onChange={(event, newValue) => {
+        setEquipmentFormData({
+            ...equipmentFormData,
+            supplier: newValue // on stocke l'objet complet ici
+        });
+    }}
+    renderInput={(params) => (
+        <TextField {...params} label="Fournisseur" variant="outlined" required />
+    )}
+/>
+
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <TextField
+                                            label="Nombre d'utilisations"
+                                            type="number"
+                                            value={equipmentFormData.useCount || 0}
+                                            onChange={(e) => {
+                                                const newValue = parseInt(e.target.value, 10);
+                                                setEquipmentFormData(prev => ({
+                                                    ...prev,
+                                                    useCount: isNaN(newValue) ? 0 : newValue
+                                                }));
+                                            }}
+                                        />
+                                        <Button
+                                            variant="contained"
+                                            onClick={() =>
+                                                setEquipmentFormData(prev => ({
+                                                    ...prev,
+                                                    useCount: (prev.useCount || 0) + 1
+                                                }))
+                                            }
+                                        >
+                                            +
+                                        </Button>
+                                    </div>
+
+                                    <FormControl>
+                                        <FormLabel>Durée totale utilisée</FormLabel>
+                                        <TextField
+                                            value={formatDuration(equipmentFormData.usageDuration || 0)}
+                                            InputProps={{ readOnly: true }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl>
+                                        <FormLabel>Ajouter durée aujourd&apos;hui</FormLabel>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <TextField
+                                                label="Heures"
+                                                type="number"
+                                                value={additionalDuration.hours}
+                                                onChange={(e) =>
+                                                    setAdditionalDuration(prev => ({
+                                                        ...prev,
+                                                        hours: parseInt(e.target.value || 0)
+                                                    }))
+                                                }
+                                            />
+                                            <TextField
+                                                label="Minutes"
+                                                type="number"
+                                                value={additionalDuration.minutes}
+                                                onChange={(e) =>
+                                                    setAdditionalDuration(prev => ({
+                                                        ...prev,
+                                                        minutes: parseInt(e.target.value || 0)
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => {
+                                                const totalToAdd = additionalDuration.hours * 60 + additionalDuration.minutes;
+                                                setEquipmentFormData(prev => ({
+                                                    ...prev,
+                                                    usageDuration: (prev.usageDuration || 0) + totalToAdd
+                                                }));
+                                                setAdditionalDuration({ hours: 0, minutes: 0 });
+                                            }}
+                                            style={{ marginTop: '10px' }}
+                                        >
+                                            Ajouter à la durée totale
+                                        </Button>
+                                    </FormControl>
+                                    <TextField
+                                        type="datetime-local"
+                                        name="lastUsedAt"
+                                        label="Dernière utilisation"
+                                        value={equipmentFormData.lastUsedAt}
                                         onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
+                                        fullWidth
                                     />
-                                     <TextField
-                                        label="Nombre d'utilisations"
-                                        name="useCount"
-                                        type="number"
-                                        value={equipmentFormData.useCount}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
-                                    />
-                                  <TextField
-                                        label="Durée d'utilisation"
-                                        name="usageDuration"
-                                        type="number"
-                                        value={equipmentFormData.usageDuration}
-                                        onChange={handleEquipmentChange}
-                                        InputLabelProps={{ shrink: true }} // Ajout de cette ligne
-                                    />
+
+
                                     <Autocomplete
                                         options={servicesByHospital}
                                         getOptionLabel={(option) => option.name || ""}
@@ -418,7 +530,7 @@ const UpdateEquipmentByMS = () => {
                                         }}
                                         renderInput={(params) => <TextField {...params} label="Service" variant="outlined" />}
                                     />
-                                     <FormControl key={`status-${equipmentFormData.status}`}>
+                                    <FormControl key={`status-${equipmentFormData.status}`}>
                                         <InputLabel>Status</InputLabel>
                                         <Select
                                             name="status"
@@ -427,7 +539,7 @@ const UpdateEquipmentByMS = () => {
                                             required
                                         >
                                             {allStatus
-                                                .filter(statusItem => ! (reception && statusItem === "en attente de réception")) // Filter based on reception
+                                                .filter(statusItem => !(reception && statusItem === "en attente de réception")) // Filter based on reception
                                                 .map((statusItem) => (
                                                     <MenuItem key={statusItem} value={statusItem}>{statusItem}</MenuItem>
                                                 ))}
@@ -487,29 +599,29 @@ const UpdateEquipmentByMS = () => {
 
                                             style={{ marginBottom: "20px" }} // Marge spécifique entre les champs
                                         />
-                                      {!shouldDisableFields && (  // Only show delete button if fields shouldn't be disabled
-    <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
-        Supprimer
-    </Button>
-)}
+                                        {!shouldDisableFields && (  // Only show delete button if fields shouldn't be disabled
+                                            <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
+                                                Supprimer
+                                            </Button>
+                                        )}
                                     </div>
                                 ))
                             ) : (
                                 <Typography>Aucun plan de maintenance trouvé.</Typography>
                             )}
                             <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-                            {!shouldDisableFields && (  // Only show these buttons if fields shouldn't be disabled
-    <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
-        Ajouter un autre plan
-    </Button>
-)}
-                                <Button type="submit" variant="contained" color="success"   disabled={shouldDisableFields}>
+                                {!shouldDisableFields && (  // Only show these buttons if fields shouldn't be disabled
+                                    <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
+                                        Ajouter un autre plan
+                                    </Button>
+                                )}
+                                <Button type="submit" variant="contained" color="success" disabled={shouldDisableFields}>
                                     Planifier
                                 </Button>
                                 <Button type="button" onClick={() => setStep(0)}>
                                     Retour
                                 </Button>
-                                {shouldDisableFields && (   <Button type="button" onClick={() => setStep(2)}>Passer</Button> )}
+                                {shouldDisableFields && (<Button type="button" onClick={() => setStep(2)}>Passer</Button>)}
 
                             </div>
                         </form>
@@ -517,28 +629,28 @@ const UpdateEquipmentByMS = () => {
                 </Slide>
 
                 {(isAdmin || isCompany || isEngeering) && step > 1 && (
-                                        <>
-                    {/* Slide pour Gérer le SLA */}
-                    <Slide direction="left" in={step === 2} mountOnEnter unmountOnExit>
-                        <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px", float: "right", width: "50%" }}>
-                            <h1>Gérer le SLA</h1>
-                            <SlaManagement equipment={equipment} setStep={setStep} />
-                            <Button onClick={() => setStep(3)}>Passer aux pièces de rechange</Button>
-                            <Button onClick={() => setStep(1)}>Retour</Button>
-                        </Paper>
-                    </Slide>
+                    <>
+                        {/* Slide pour Gérer le SLA */}
+                        <Slide direction="left" in={step === 2} mountOnEnter unmountOnExit>
+                            <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px", float: "right", width: "50%" }}>
+                                <h1>Gérer le SLA</h1>
+                                <SlaManagement equipment={equipment} setStep={setStep} />
+                                <Button onClick={() => setStep(3)}>Passer aux pièces de rechange</Button>
+                                <Button onClick={() => setStep(1)}>Retour</Button>
+                            </Paper>
+                        </Slide>
 
-                    {/* Slide pour Gérer les pièces de rechange */}
-                    <Slide direction="left" in={step === 3} mountOnEnter unmountOnExit>
-                        <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px", float: "left", width: "100%", marginLeft: "-5%" }}>
-                            <h1>Gérer les pièces de rechange</h1>
-                            <SpareParts equipment={equipment} />
-                            <Button onClick={handleCancel}>Terminer</Button>
-                            <Button onClick={() => setStep(2)}>Retour</Button>
-                        </Paper>
-                    </Slide>
+                        {/* Slide pour Gérer les pièces de rechange */}
+                        <Slide direction="left" in={step === 3} mountOnEnter unmountOnExit>
+                            <Paper elevation={3} style={{ padding: "20px", marginBottom: "20px", float: "left", width: "100%", marginLeft: "-5%" }}>
+                                <h1>Gérer les pièces de rechange</h1>
+                                <SpareParts equipment={equipment} />
+                                <Button onClick={handleCancel}>Terminer</Button>
+                                <Button onClick={() => setStep(2)}>Retour</Button>
+                            </Paper>
+                        </Slide>
 
-                </>)}
+                    </>)}
                 {/* Dialogue de confirmation */}
                 <Dialog
                     open={openDialog}

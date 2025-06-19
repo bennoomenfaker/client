@@ -32,7 +32,8 @@ const EquipmentUpdateForm = ({ initialData }) => {
         slaId: initialData.slaId,
         startDateWarranty: initialData.startDateWarranty,
         endDateWarranty: initialData.endDateWarranty,
-        reception: initialData.reception
+        reception: initialData.reception,
+        fromMinistere: initialData.fromMinistere
     } : {
         id: null,
         nom: '',
@@ -49,7 +50,8 @@ const EquipmentUpdateForm = ({ initialData }) => {
         slaId: null,
         startDateWarranty: null,
         endDateWarranty: null,
-        reception: false
+        reception: false,
+        fromMinistere : true
     });
 
     
@@ -156,7 +158,8 @@ EquipmentUpdateForm.propTypes = {
         slaId: PropTypes.string,
         startDateWarranty: PropTypes.string,
         endDateWarranty: PropTypes.string,
-        reception: PropTypes.bool
+        reception: PropTypes.bool,
+        fromMinistere: PropTypes.bool
     }),
     onSuccess: PropTypes.func.isRequired
 };

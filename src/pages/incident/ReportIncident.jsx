@@ -44,6 +44,17 @@ const ReportIncident = () => {
     const [resolutionMinutes, setResolutionMinutes] = useState(0);
     const [responseDays, setResponseDays] = useState(0);
     const [resolutionDays, setResolutionDays] = useState(0);
+
+    useEffect(() => {
+      const fetchData = async () => {
+        await dispatch(resetSelectedSla());
+        dispatch(getUsersByHospitalId(hospitalId));
+        if (equipment?.slaId) {
+          dispatch(fetchSlaById(equipment?.slaId));
+        }
+      };
+      fetchData();
+    }, [dispatch, hospitalId, equipment?.slaId]);
   
   useEffect(() => {
     // Vérifie si equipment est déjà chargé
@@ -59,21 +70,16 @@ const ReportIncident = () => {
   useEffect(() => {
     if (sla) {
       setSlaData(sla);
-      const responseD = Math.floor(sla.maxResponseTime / (60 * 24));
-      const responseH = Math.floor((sla.maxResponseTime % (60 * 24)) / 60);
-      const responseM = sla.maxResponseTime % 60;
-      setResponseDays(responseD);
-      setResponseHours(responseH);
-      setResponseMinutes(responseM);
+      const responseTotal = sla.maxResponseTime;
+      setResponseDays(Math.floor(responseTotal / (60 * 24)));
+      setResponseHours(Math.floor((responseTotal % (60 * 24)) / 60));
+      setResponseMinutes(responseTotal % 60);
   
-      const resolutionD = Math.floor(sla.maxResolutionTime / (60 * 24));
-      const resolutionH = Math.floor((sla.maxResolutionTime % (60 * 24)) / 60);
-      const resolutionM = sla.maxResolutionTime % 60;
-      setResolutionDays(resolutionD);
-      setResolutionHours(resolutionH);
-      setResolutionMinutes(resolutionM);
+      const resolutionTotal = sla.maxResolutionTime;
+      setResolutionDays(Math.floor(resolutionTotal / (60 * 24)));
+      setResolutionHours(Math.floor((resolutionTotal % (60 * 24)) / 60));
+      setResolutionMinutes(resolutionTotal % 60);
     } else {
-      // Reset the form state when sla is null
       setSlaData({
         name: "",
         maxResponseTime: 0,
@@ -81,14 +87,11 @@ const ReportIncident = () => {
         penaltyAmount: 0,
         userIdCompany: "",
       });
-      setResponseDays(0);
-      setResponseHours(0);
-      setResponseMinutes(0);
-      setResolutionDays(0);
-      setResolutionHours(0);
-      setResolutionMinutes(0);
+      setResponseDays(0); setResponseHours(0); setResponseMinutes(0);
+      setResolutionDays(0); setResolutionHours(0); setResolutionMinutes(0);
     }
   }, [sla]);
+  
     useEffect(() => {
       if (!sla) {
         // If there is no SLA for the equipment, reset the form fields
@@ -108,13 +111,7 @@ const ReportIncident = () => {
       }
     }, [sla]);
 
-  useEffect(() => {
-    dispatch(resetSelectedSla());
-    dispatch(getUsersByHospitalId(hospitalId));
-    if (equipment?.slaId) {
-      dispatch(fetchSlaById(equipment?.slaId));
-    }
-  }, [dispatch, hospitalId, equipment?.slaId]);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -139,10 +136,11 @@ const ReportIncident = () => {
           reportedBy: sessionStorage.getItem("userId"),
         })
       ).unwrap();
+      resetSelectedSla()
   
       toast.success("Incident signalé avec succès !");
       setDescription("");
-      setTimeout(() => navigate("/manage-equipment/equipmentsOfHospital"), 1500);
+      navigate("/manage-equipment/equipmentsOfHospital")
     } catch (error) {
       toast.error("Erreur lors de la déclaration de l'incident !");
     } finally {
@@ -298,7 +296,7 @@ const ReportIncident = () => {
                     ))}
                   </Select>
                   <Button type="button" variant="contained" color="success" onClick={handleSlaSubmit}>
-                    {equipment.slaId ? "Modifier le SLA" : "Créer le SLA"}
+                    {sla ? "Modifier le SLA" : "Créer le SLA"}
                   </Button>
                 </>
               )

@@ -62,7 +62,7 @@ const ValidateIncident = () => {
         })
       ).unwrap();
 
-      toast.success("L'incident a été validé avec succès !");
+      toast.success("L'incident a été validé avec succès!");
       navigate('/manage-incident/consultListOfIncident');
     } catch (error) {
       console.error("Erreur lors de la validation de l'incident :", error);

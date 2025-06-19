@@ -10,7 +10,11 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle, } from "@mui/material";
+  DialogTitle,
+  Box,
+  Typography,
+  Grid,
+  Stack, } from "@mui/material";
 import { deleteMaintenancePlan } from "../../../redux/slices/maintenancePlanSlice ";
 import { toast } from "react-toastify";
 
@@ -30,15 +34,11 @@ const ManageSparePartsUpdateSpareParts = () => {
   const [maintenancePlans, setMaintenancePlans] = useState(sparePart?.maintenancePlans || []);
   const [lots, setLots] = useState(sparePart?.lots || []);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, index: null, type: null, id: null });
-  const [newMaintenancePlan, setNewMaintenancePlan] = useState({ maintenanceDate: "", description: "" });
   const [newLot, setNewLot] = useState({ quantity: 0, startDateWarranty: "", endDateWarranty: "", acquisitionDate: "" });
-  const [addingMaintenance, setAddingMaintenance] = useState(false);
   const [addingLot, setAddingLot] = useState(false);
   const navigate = useNavigate();
   
-  const handleDeleteMaintenancePlan = (index, planId) => {
-    setDeleteDialog({ open: true, index, type: "maintenance", id: planId });
-  };
+  
 
   const handleDeleteLot = (index) => {
     setDeleteDialog({ open: true, index, type: "lot" });
@@ -66,12 +66,7 @@ const ManageSparePartsUpdateSpareParts = () => {
        return false;
      }
  
-     for (let plan of maintenancePlans) {
-       if (!isValidDate(plan.maintenanceDate)) {
-         toast.warning("Veuillez entrer une date de maintenance valide !");
-         return false;
-       }
-     }
+    
  
      for (let lot of lots) {
        if (!isValidDate(lot.startDateWarranty) || !isValidDate(lot.endDateWarranty) || !isValidDate(lot.acquisitionDate)) {
@@ -99,27 +94,17 @@ const ManageSparePartsUpdateSpareParts = () => {
   };
 
 
-  const handleAddMaintenancePlan = () => {
-    setAddingMaintenance(true);
-  };
+
 
   const handleAddLot = () => {
     setAddingLot(true);
   };
 
-  const handleMaintenancePlanChange = (e) => {
-    setNewMaintenancePlan({ ...newMaintenancePlan, [e.target.name]: e.target.value });
-  };
 
   const handleLotChange = (e) => {
     setNewLot({ ...newLot, [e.target.name]: e.target.value });
   };
 
-  const handleConfirmMaintenancePlan = () => {
-    setMaintenancePlans([...maintenancePlans, { ...newMaintenancePlan, id: null }]);
-    setNewMaintenancePlan({ maintenanceDate: "", description: "" });
-    setAddingMaintenance(false);
-  };
 
   const handleConfirmLot = () => {
     setLots([...lots, { ...newLot, id: null }]);
@@ -127,10 +112,7 @@ const ManageSparePartsUpdateSpareParts = () => {
     setAddingLot(false);
   };
 
-  const handleCancelMaintenancePlan = () => {
-    setNewMaintenancePlan({ maintenanceDate: "", description: "" });
-    setAddingMaintenance(false);
-  };
+
 
   const handleCancelLot = () => {
     setNewLot({ quantity: 0, startDateWarranty: "", endDateWarranty: "", acquisitionDate: "" });
@@ -147,105 +129,159 @@ const ManageSparePartsUpdateSpareParts = () => {
     setLots(updatedLots);
   };
 
-  const handleEditMaintenancePlan = (index, e) => {
-    const updatedPlans = [...maintenancePlans];
-    updatedPlans[index] = { ...updatedPlans[index], [e.target.name]: e.target.value };
-    setMaintenancePlans(updatedPlans);
-  };
+
 
  
   return (
-    <div style={{ display: 'flex' }}>
+  <Box display="flex">
       <NavBar onToggle={setIsNavOpen} />
-      <div
-        style={{
-          width: isNavOpen ? 'calc(100% - 60px)' : 'calc(100% - 0px)',
-          transition: 'width 0.3s ease',
-          padding: '20px',
-          marginTop: '50px',
-          display: 'grid',
-          gridTemplateColumns: '1fr', // Utilisation de CSS Grid
-          gap: '20px',
-        }}
-      >
-        <h2>Modifier la pièce de rechange</h2>
+      <Box
+      sx={{
+        width: isNavOpen ? "calc(100% - 60px)" : "100%",
+        transition: "width 0.3s ease",
+        p: 3,
+        mt: "50px",
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: 3,
+      }}
+    >
+       <Typography variant="h5" gutterBottom>
+        Modifier la pièce de rechange
+      </Typography>
+  {/* Formulaire principal */}
+      <Grid container spacing={2} >
+        <Grid item xs={12} md={4}>
+          <TextField label="Nom" name="name" value={formData.name} onChange={handleChange} fullWidth />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField label="Durée de vie" type="number" name="lifespan" value={formData.lifespan} onChange={handleChange} fullWidth />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField label="Fournisseur" name="supplier" value={formData.supplier} onChange={handleChange} fullWidth />
+        </Grid>
+      </Grid>
 
-        <div style={{ display: 'grid', gap: '10px' }}>
-          <TextField label="Nom" name="name" value={formData.name} onChange={handleChange} fullWidth margin="normal" />
-          <TextField label="Durée de vie" type="number" name="lifespan" value={formData.lifespan} onChange={handleChange} fullWidth margin="normal" />
-          <TextField label="Fournisseur" name="supplier" value={formData.supplier} onChange={handleChange} fullWidth margin="normal" />
-        </div>
+       {/* Lots */}
+      <Box mb={4}>
+        <Typography variant="h6" gutterBottom>
+          Lots
+        </Typography>
+       {lots.map((lot, index) => (
+  <Stack
+    key={index}
+    direction="row"
+    spacing={2}
+    alignItems="center"
+    flexWrap="wrap"
+    mb={2}
+  >
+    <TextField
+      label="Quantité"
+      type="number"
+      name="quantity"
+      value={lot.quantity}
+      onChange={(e) => handleEditLot(index, e)}
+    />
+    <TextField
+      label="Début garantie"
+      type="date"
+      name="startDateWarranty"
+      value={lot.startDateWarranty?.split('T')[0]}
+      onChange={(e) => handleEditLot(index, e)}
+      InputLabelProps={{ shrink: true }}
+    />
+    <TextField
+      label="Fin garantie"
+      type="date"
+      name="endDateWarranty"
+      value={lot.endDateWarranty?.split('T')[0]}
+      onChange={(e) => handleEditLot(index, e)}
+      InputLabelProps={{ shrink: true }}
+    />
+    <TextField
+      label="Date acquisition"
+      type="date"
+      name="acquisitionDate"
+      value={lot.acquisitionDate?.split('T')[0]}
+      onChange={(e) => handleEditLot(index, e)}
+      InputLabelProps={{ shrink: true }}
+    />
+    <Button
+      variant="outlined"
+      color="error"
+      onClick={() => handleDeleteLot(index)}
+    >
+      Supprimer
+    </Button>
+  </Stack>
+))}
 
-        <div>
-          <h3>Plans de maintenance</h3>
-          {maintenancePlans.map((plan, index) => (
-            <div key={index} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-              <TextField type="date" name="maintenanceDate" value={plan.maintenanceDate?.split('T')[0]} onChange={(e) => handleEditMaintenancePlan(index, e)} />
-              <TextField name="description" value={plan.description} onChange={(e) => handleEditMaintenancePlan(index, e)} />
-              <Button variant="outlined" color="error" onClick={() => handleDeleteMaintenancePlan(index, plan.id)}>
-                Supprimer
-              </Button>
-            </div>
-          ))}
 
-          {addingMaintenance && (
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <TextField label="Date de maintenance" type="date" name="maintenanceDate" value={newMaintenancePlan.maintenanceDate} onChange={handleMaintenancePlanChange} />
-              <TextField label="Description" name="description" value={newMaintenancePlan.description} onChange={handleMaintenancePlanChange} />
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <Button variant="contained" onClick={handleConfirmMaintenancePlan}>
-                  Confirmer
-                </Button>
-                <Button variant="outlined" onClick={handleCancelMaintenancePlan}>
-                  Annuler
-                </Button>
-              </div>
-            </div>
-          )}
-          {!addingMaintenance && <Button variant="contained" onClick={handleAddMaintenancePlan}>Ajouter un plan</Button>}
-        </div>
 
-        <div>
-          <h3>Lots</h3>
-          {lots.map((lot, index) => (
-            <div key={index} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-              <TextField label="Quantité" type="number" name="quantity" value={lot.quantity} onChange={(e) => handleEditLot(index, e)} />
-              <TextField label="Début garantie" type="date" name="startDateWarranty" value={lot.startDateWarranty?.split('T')[0]} onChange={(e) => handleEditLot(index, e)} />
-              <TextField label="Fin garantie" type="date" name="endDateWarranty" value={lot.endDateWarranty?.split('T')[0]} onChange={(e) => handleEditLot(index, e)} />
-              <TextField label="Date acquisition" type="date" name="acquisitionDate" value={lot.acquisitionDate?.split('T')[0]} onChange={(e) => handleEditLot(index, e)} />
-              <Button variant="outlined" color="error" onClick={() => handleDeleteLot(index)}>
-                Supprimer
-              </Button>
-            </div>
-          ))}
+          {/* Ajout d'un lot */}
+       {addingLot && (
+  <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" mb={2}>
+    <TextField
+      label="Quantité"
+      type="number"
+      name="quantity"
+      value={newLot.quantity}
+      onChange={handleLotChange}
+    />
+    <TextField
+      label="Début garantie"
+      type="date"
+      name="startDateWarranty"
+      value={newLot.startDateWarranty}
+      onChange={handleLotChange}
+      InputLabelProps={{ shrink: true }}
+    />
+    <TextField
+      label="Fin garantie"
+      type="date"
+      name="endDateWarranty"
+      value={newLot.endDateWarranty}
+      onChange={handleLotChange}
+      InputLabelProps={{ shrink: true }}
+    />
+    <TextField
+      label="Date acquisition"
+      type="date"
+      name="acquisitionDate"
+      value={newLot.acquisitionDate}
+      onChange={handleLotChange}
+      InputLabelProps={{ shrink: true }}
+    />
+    <Stack direction="row" spacing={2}>
+      <Button variant="contained" onClick={handleConfirmLot}>Confirmer</Button>
+      <Button variant="outlined" onClick={handleCancelLot}>Annuler</Button>
+    </Stack>
+  </Stack>
+)}
 
-          {addingLot && (
-            <div style={{ display: 'grid', gap: '10px' }}>
-              <TextField label="Quantité" type="number" name="quantity" value={newLot.quantity} onChange={handleLotChange} />
-              <TextField label="Début garantie" type="date" name="startDateWarranty" value={newLot.startDateWarranty} onChange={handleLotChange} />
-              <TextField label="Fin garantie" type="date" name="endDateWarranty" value={newLot.endDateWarranty} onChange={handleLotChange} />
-              <TextField label="Date acquisition" type="date" name="acquisitionDate" value={newLot.acquisitionDate} onChange={handleLotChange} />
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <Button variant="contained" onClick={handleConfirmLot}>
-                  Confirmer
-                </Button>
-                <Button variant="outlined" onClick={handleCancelLot}>
-                  Annuler
-                </Button>
-              </div>
-            </div>
-          )}
-          {!addingLot && <Button variant="contained" onClick={handleAddLot}>Ajouter un lot</Button>}
-        </div>
+{!addingLot && (
+  <Button variant="contained" onClick={handleAddLot}>
+    Ajouter un lot
+  </Button>
+)}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <Button variant="contained" color="success" onClick={handleSave}>
-            Sauvegarder
-          </Button>
-          <Button variant="contained" color="warning" onClick={() => navigate(`/manage-equipment/update-equipment/${id}`)}>
-            Annuler
-          </Button>
-        </div>
+      </Box>
+       {/* Actions */}
+      <Box display="flex" justifyContent="flex-end" gap={2}>
+        <Button variant="contained" color="success" onClick={handleSave}>
+          Sauvegarder
+        </Button>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={() =>
+            navigate(`/manage-equipment/update-equipment/equipmentId/${id}/editSparePart`)
+          }
+        >
+          Annuler
+        </Button>
+      </Box>
 
         <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ ...deleteDialog, open: false })}>
           <DialogTitle>Confirmer la suppression</DialogTitle>
@@ -259,8 +295,8 @@ const ManageSparePartsUpdateSpareParts = () => {
             </Button>
           </DialogActions>
         </Dialog>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

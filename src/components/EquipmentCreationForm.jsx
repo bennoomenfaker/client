@@ -10,7 +10,6 @@ import { fetchEMDNCodes } from "../redux/slices/emdnNomenclatureSlice";
 import { fetchHospitals } from "../redux/slices/hospitalSlice";
 import { createEquipment, updateEquipment } from "../redux/slices/equipmentSlice";
 import { useNavigate } from "react-router-dom";
-
 const riskClasses = ["1", "2a", "2b", "3"];
 
 const EquipmentCreationForm = ({ initialData, onSuccess }) => {
@@ -28,7 +27,8 @@ const EquipmentCreationForm = ({ initialData, onSuccess }) => {
         acquisitionDate: initialData?.acquisitionDate || "",
         amount: initialData?.amount || "",
         startDateWarranty: initialData?.startDateWarranty || "",
-        endDateWarranty: initialData?.endDateWarranty || ""
+        endDateWarranty: initialData?.endDateWarranty || "",
+        fromMinistere: true,
     });
 
     useEffect(() => {
@@ -137,7 +137,8 @@ const EquipmentCreationForm = ({ initialData, onSuccess }) => {
             sparePartIds: data.sparePartIds?.length ? data.sparePartIds : [],
             slaId: data.slaId || null,
             startDateWarranty: data.startDateWarranty || null,
-            endDateWarranty: data.endDateWarranty || null
+            endDateWarranty: data.endDateWarranty || null,
+            fromMinistere: true,
         };
     };
 
@@ -191,7 +192,7 @@ const EquipmentCreationForm = ({ initialData, onSuccess }) => {
             
             <Autocomplete
                 options={flatEMDNList}
-                getOptionLabel={(option) => `${option.code} - ${option.nom}`}
+                getOptionLabel={(option) => `${getLastIndex(option.code)} - ${option.nom}`}
                 value={flatEMDNList.find(opt => getLastIndex(opt.code) === formData.emdnCode) || null}
                 onChange={(event, newValue) => {
                     const lastIndex = newValue ? getLastIndex(newValue.code) : null;

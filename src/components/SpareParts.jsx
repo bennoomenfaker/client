@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { 
-  Box, Button, TextField, InputAdornment, Grid, IconButton, Tooltip, 
+  Box, Button, TextField, InputAdornment, Grid, IconButton, 
   Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle 
 } from "@mui/material";
 import { Search as SearchIcon, Edit as EditIcon, Add as AddIcon, Visibility as VisibilityIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
-import { fetchSparePartsByEquipmentId } from "../redux/slices/equipmentSlice";
+import { fetchSparePartsByHospitalAndEmdnCode  } from "../redux/slices/sparePartSlice";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
@@ -22,10 +22,11 @@ const EquipmentSpareParts = ({ equipment }) => {
   const [selectedSparePart, setSelectedSparePart] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  const hospitalId = sessionStorage.getItem("hospitalId")
   useEffect(() => {
     if (equipment && equipment.id) {
-      dispatch(fetchSparePartsByEquipmentId(equipment.id))
+      const code = equipment.emdnCode.code
+      dispatch(fetchSparePartsByHospitalAndEmdnCode({ hospitalId, code }))
         .then((resultAction) => {
           setSpareParts(resultAction.payload);
           setFilteredSpareParts(resultAction.payload);
@@ -37,7 +38,7 @@ const EquipmentSpareParts = ({ equipment }) => {
       setSpareParts([]);
       setFilteredSpareParts([]);
     }
-  }, [dispatch, equipment]);
+  }, [dispatch, equipment, hospitalId]);
 
   useEffect(() => {
     setFilteredSpareParts(
@@ -51,25 +52,7 @@ const EquipmentSpareParts = ({ equipment }) => {
     { field: "name", headerName: "Nom", width: 150 },
     { field: "lifespan", headerName: "Durée de vie", width: 100 },
     { field: "supplier", headerName: "Fournisseur", width: 150 },
-    {
-      field: "maintenanceDates",
-      headerName: "Dates de maintenance",
-      width: 250,
-      renderCell: (params) => {
-        if (params.row.maintenancePlans && params.row.maintenancePlans.length > 0) {
-          return (
-            <Tooltip title={params.row.maintenancePlans.map(plan => new Date(plan.maintenanceDate).toLocaleDateString()).join(", ")}>
-              <div style={{ whiteSpace: "pre-line" }}>
-                {params.row.maintenancePlans.map((plan) => (
-                  <div key={plan.id}>{new Date(plan.maintenanceDate).toLocaleDateString()}</div>
-                ))}
-              </div>
-            </Tooltip>
-          );
-        }
-        return <div>Aucune date</div>;
-      },
-    },
+   
     {
       field: "actions",
       headerName: "Actions",
@@ -216,6 +199,7 @@ EquipmentSpareParts.propTypes = {
   equipment: PropTypes.shape({
     id: PropTypes.string.isRequired,
     serialCode: PropTypes.string.isRequired,
+    emdnCode: PropTypes.string.isRequired,
   }).isRequired,
 };
 

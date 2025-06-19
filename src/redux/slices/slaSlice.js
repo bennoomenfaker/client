@@ -21,6 +21,21 @@ export const createSla = createAsyncThunk(
     }
   }
 );
+// 🚀 Récupérer les SLAs d'un hôpital avec les infos des équipements associés
+export const fetchSlasByHospitalWithEquipment = createAsyncThunk(
+  "sla/fetchSlasByHospitalWithEquipment",
+  async (hospitalId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/slas/hospital/${hospitalId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data; // tableau de SLADetailsDTO
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
 
 // 🚀 Récupérer un SLA par ID
 export const fetchSlaById = createAsyncThunk(
@@ -127,6 +142,8 @@ const slaSlice = createSlice({
     isLoading: false,
     error: null,
     slaComplianceStatus: null,
+    slasByHospital: [],
+
   },
   reducers: {
     resetSelectedSla: (state) => {
@@ -155,6 +172,7 @@ const slaSlice = createSlice({
       })
       .addCase(fetchSlaById.pending, (state) => {
         state.isLoading = true;
+        state.selectedSla = null
       })
       .addCase(fetchSlaById.rejected, (state, action) => {
         state.isLoading = false;
@@ -181,6 +199,7 @@ const slaSlice = createSlice({
       .addCase(fetchSlaByEquipmentId.pending, (state) => {
         state.isLoading = true;
         state.selectedSla = null;
+        resetSelectedSla()
       })
       .addCase(fetchSlaByEquipmentId.rejected, (state, action) => {
         state.isLoading = false;
@@ -203,6 +222,7 @@ const slaSlice = createSlice({
       // Gestion de l'update du SLA
       .addCase(updateSla.pending, (state) => {
         state.isLoading = true;
+        state.selectedSla = null
       })
       .addCase(updateSla.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -214,7 +234,20 @@ const slaSlice = createSlice({
       .addCase(updateSla.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-      });
+      })
+      .addCase(fetchSlasByHospitalWithEquipment.pending, (state) => {
+  state.isLoading = true;
+  state.slasByHospital = [];
+})
+.addCase(fetchSlasByHospitalWithEquipment.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.slasByHospital = action.payload;
+})
+.addCase(fetchSlasByHospitalWithEquipment.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
   },
 });
 export const { resetSelectedSla, resetSlaComplianceStatus } = slaSlice.actions;

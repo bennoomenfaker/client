@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import IncidentsParService from "./dashboard/IncidentsParService";
 import EquipementsParService from "./dashboard/EquipementsParService";
 import StatutsIncidents from "./dashboard/StatutsIncidents";
-import IncidentsParEquipement from "./dashboard/IncidentsParEquipement";
 import EvolutionIncidents from "./dashboard/EvolutionIncidents";
 import EquipementsParStatut from "./dashboard/EquipementsParStatut ";
 import { Box, Grid, Typography } from "@mui/material";
@@ -81,9 +80,7 @@ const MaintenanceEngineerPage = () => {
            <StatutsIncidents data={allIncidents} />
          </Box>
    
-         <Box mb={3}>
-           <IncidentsParEquipement data={allIncidents} />
-         </Box>
+         
    
          <Box mb={3}>
            <EvolutionIncidents data={allIncidents} />

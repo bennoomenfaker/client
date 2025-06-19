@@ -16,7 +16,7 @@ const ManageSparePartsCreateNewSpareParts = () => {
     serviceId: "",
     hospitalId: "",
     equipmentId: "",
-    maintenancePlans: [],
+   
     lots: [],
   });
 
@@ -36,6 +36,8 @@ const ManageSparePartsCreateNewSpareParts = () => {
         equipmentId: equipment.id,
         serviceId: equipment.serviceId,
         hospitalId: equipment.hospitalId,
+        emdnCode: equipment.emdnCode?.code || "",
+        emdnNom: equipment.emdnCode?.nom || "",
       }));
     }
   }, [equipment]);
@@ -59,19 +61,9 @@ const ManageSparePartsCreateNewSpareParts = () => {
     setFormData((prevData) => ({ ...prevData, lots: updatedLots }));
   };
 
-  const handleAddMaintenancePlan = () => {
-    setFormData((prevData) => ({
-      ...prevData,
-      maintenancePlans: [...prevData.maintenancePlans, { maintenanceDate: "", description: "" }],
-    }));
-  };
+  
 
-  const handleChangeMaintenancePlan = (e, index) => {
-    const { name, value } = e.target;
-    const updatedPlans = [...formData.maintenancePlans];
-    updatedPlans[index][name] = value;
-    setFormData((prevData) => ({ ...prevData, maintenancePlans: updatedPlans }));
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,10 +72,7 @@ const ManageSparePartsCreateNewSpareParts = () => {
       toast.warning("Veuillez remplir tous les champs obligatoires !");
       return;
     }
-    if (formData.maintenancePlans.length === 0) {
-      toast.warning("Ajoutez au moins un plan de maintenance !");
-      return;
-    }
+  
     if (formData.lots.length === 0) {
       toast.warning("Ajoutez au moins un lot !");
       return;
@@ -92,7 +81,7 @@ const ManageSparePartsCreateNewSpareParts = () => {
     try {
       await dispatch(createSparePart(formData));
       toast.success("Pièce de rechange créée avec succès !");
-      navigate(`/manage-equipment/update-equipment/${equipment.serialCode}`);
+      navigate(`/manageSparePart/consultListSpareParts`);
     // eslint-disable-next-line no-unused-vars
     } catch (error) {
       toast.error("Erreur lors de la création de la pièce de rechange.");
@@ -119,19 +108,6 @@ const ManageSparePartsCreateNewSpareParts = () => {
                 <TextField label="Fournisseur" name="supplier" value={formData.supplier} onChange={handleChange} fullWidth required />
               </Grid>
             </Grid>
-
-            <Typography variant="h6" mt={3}>Plans de maintenance</Typography>
-            {formData.maintenancePlans.map((plan, index) => (
-              <Grid container spacing={2} key={index}>
-                <Grid item xs={6}>
-                  <TextField label="Date" type="date" name="maintenanceDate" value={plan.maintenanceDate} onChange={(e) => handleChangeMaintenancePlan(e, index)} fullWidth />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField label="Description" name="description" value={plan.description} onChange={(e) => handleChangeMaintenancePlan(e, index)} fullWidth />
-                </Grid>
-              </Grid>
-            ))}
-            <Button onClick={handleAddMaintenancePlan}>Ajouter un plan</Button>
 
             <Typography variant="h6" mt={3}>Lots</Typography>
             {formData.lots.map((lot, index) => (

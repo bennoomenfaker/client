@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
 const API_BASE_URL = "http://localhost:4040/api/notifications";
 
 // Fonction pour récupérer le token d'authentification

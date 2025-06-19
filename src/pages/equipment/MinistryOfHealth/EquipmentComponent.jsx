@@ -148,7 +148,17 @@ const EquipmentComponent = () => {
       headerName: "Classe de risque",
       flex: 1,
       sortable: true,
-    },
+    },{
+  field: "fromMinistere",
+  headerName: "Origine",
+  width: 150,
+ renderCell: (params) => (
+  <span style={{ color: params.value ? "green" : "blue", fontWeight: "bold" }}>
+    {params.value ? "Ministère de santé" : "Fournisseur"}
+  </span>
+)
+
+},
 
    
     {

@@ -80,7 +80,7 @@ const ManageServiceConsultList = () => {
 
   const columns = [
     { field: "name", headerName: "Name", flex: 1, sortable: true },
-    { field: "description", headerName: "Description", flex: 1, sortable: true },
+    { field: "description", headerName: "Description", flex: 1, sortable: true  },
     {
       field: "actions",
       headerName: "Actions",
@@ -175,7 +175,7 @@ const ManageServiceConsultList = () => {
           />
         </div>
 
-        <div style={{ height: 400, width: "100%", marginTop: 20 }}>
+        <div style={{ height: 450, width: "100%", marginTop: 20 }}>
           <DataGrid
             rows={filteredServices} // Utiliser les données filtrées
             columns={columns}

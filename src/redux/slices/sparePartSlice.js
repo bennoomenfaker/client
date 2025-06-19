@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:9999/equipment-service";
+
 const getAuthHeaders = () => {
   const token = sessionStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -42,10 +43,25 @@ export const fetchSparePartsByEquipmentId = createAsyncThunk(
   "sparePart/fetchSparePartsByEquipmentId",
   async (equipmentId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/spare-parts/equipment/${equipmentId}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/spare-parts/by-equipment/${equipmentId}`, {
         headers: getAuthHeaders(),
       });
       return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
+
+// 🚀 Supprimer une pièce de rechange
+export const deleteSparePart = createAsyncThunk(
+  "sparePart/deleteSparePart",
+  async (sparePartId, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/api/spare-parts/${sparePartId}`, {
+        headers: getAuthHeaders(),
+      });
+      return sparePartId;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur inconnue");
     }
@@ -55,9 +71,10 @@ export const fetchSparePartsByEquipmentId = createAsyncThunk(
 // 🚀 Mettre à jour une pièce de rechange
 export const updateSparePart = createAsyncThunk(
   "sparePart/updateSparePart",
-  async ({ sparePartId, sparePartData }, { rejectWithValue }) => {
+  async ({ id, updatedSparePart }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/spare-parts/${sparePartId}`, sparePartData, {
+      console.log(updatedSparePart)
+      const response = await axios.put(`${API_BASE_URL}/api/spare-parts/${id}`, updatedSparePart , {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       });
       return response.data;
@@ -66,30 +83,89 @@ export const updateSparePart = createAsyncThunk(
     }
   }
 );
-
-// 🚀 Supprimer une pièce de rechange d'un équipement spécifique
-export const deleteSparePart = createAsyncThunk(
-  "sparePart/deleteSparePart",
-  async ({ equipmentId, sparePartId }, { rejectWithValue }) => {
+// 🚀 Récupérer toutes les pièces d’un hôpital + code EMDN
+export const fetchSparePartsByHospitalAndEmdnCode = createAsyncThunk(
+  "sparePart/fetchSparePartsByHospitalAndEmdnCode",
+  async ({ hospitalId, code }, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/spare-parts/${equipmentId}/spareParts/${sparePartId}`, {
-        headers: getAuthHeaders(),
-      });
-      return { equipmentId, sparePartId }; // Retourner les IDs supprimés pour mettre à jour le state
+      const response = await axios.get(
+        `${API_BASE_URL}/api/spare-parts/by-hospital-and-emdn`,
+        {
+          params: { hospitalId, code },
+          headers: getAuthHeaders(),
+        }
+      );
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur inconnue");
     }
   }
 );
 
-// 🚀 Mettre à jour les plans de maintenance d'une pièce de rechange
-export const updateSparePartMaintenancePlans = createAsyncThunk(
-  "sparePart/updateSparePartMaintenancePlans",
-  async ({ sparePartId, maintenancePlans }, { rejectWithValue }) => {
+
+// 🚀 Récupérer toutes les pièces de rechange d'un hôpital
+export const fetchSparePartsByHospitalId = createAsyncThunk(
+  "sparePart/fetchSparePartsByHospitalId",
+  async (hospitalId, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/spare-parts/${sparePartId}/maintenance-plans`, maintenancePlans, {
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      const response = await axios.get(`${API_BASE_URL}/api/spare-parts/by-hospital/${hospitalId}`, {
+        headers: getAuthHeaders(),
       });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
+
+// 🚀 Ajouter un lot à une pièce de rechange
+export const addLotToSparePart = createAsyncThunk(
+  "sparePart/addLotToSparePart",
+  async ({ sparePartId, lotData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/spare-parts/${sparePartId}/lots`,
+        lotData,
+        { headers: { "Content-Type": "application/json", ...getAuthHeaders() } }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
+
+// 🚀 Supprimer un lot d'une pièce de rechange
+export const removeLotFromSparePart = createAsyncThunk(
+  "sparePart/removeLotFromSparePart",
+  async ({ sparePartId, lotData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/spare-parts/${sparePartId}/lots`,
+        {
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          data: lotData, // Utilisation de "data" pour envoyer un corps avec DELETE
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur inconnue");
+    }
+  }
+);
+
+// 🚀 Récupérer toutes les pièces compatibles à un code EMDN (code fourni par le front)
+export const fetchSparePartsByEmdnCode = createAsyncThunk(
+  "sparePart/fetchSparePartsByEmdnCode",
+  async (code, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/spare-parts/by-emdn-code`,
+        {
+          params: { code },
+          headers: getAuthHeaders(),
+        }
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Erreur inconnue");
@@ -112,6 +188,7 @@ const sparePartSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Create
       .addCase(createSparePart.pending, (state) => {
         state.isLoading = true;
       })
@@ -123,63 +200,107 @@ const sparePartSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      .addCase(fetchSparePartById.fulfilled, (state, action) => {
-        state.selectedSparePart = action.payload;
-        state.isLoading = false;
-      })
+
+      // Get by ID
       .addCase(fetchSparePartById.pending, (state) => {
         state.isLoading = true;
+      })
+      .addCase(fetchSparePartById.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.selectedSparePart = action.payload;
       })
       .addCase(fetchSparePartById.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
-      .addCase(fetchSparePartsByEquipmentId.fulfilled, (state, action) => {
-        state.spareParts = action.payload;
-        state.isLoading = false;
-      })
+
+      // Get by Equipment
       .addCase(fetchSparePartsByEquipmentId.pending, (state) => {
         state.isLoading = true;
+      })
+      .addCase(fetchSparePartsByEquipmentId.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.spareParts = action.payload;
       })
       .addCase(fetchSparePartsByEquipmentId.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Update
       .addCase(updateSparePart.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(updateSparePart.fulfilled, (state, action) => {
         state.isLoading = false;
-        const index = state.spareParts.findIndex((sparePart) => sparePart.id === action.payload.id);
-        if (index !== -1) {
-          state.spareParts[index] = action.payload;
-        }
+        const index = state.spareParts.findIndex((s) => s.id === action.payload.id);
+        if (index !== -1) state.spareParts[index] = action.payload;
       })
       .addCase(updateSparePart.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
+
+      // Delete
       .addCase(deleteSparePart.fulfilled, (state, action) => {
-        state.spareParts = state.spareParts.filter((sparePart) => sparePart.id !== action.payload);
+        state.spareParts = state.spareParts.filter((s) => s.id !== action.payload);
       })
       .addCase(deleteSparePart.rejected, (state, action) => {
         state.error = action.payload;
       })
-   
-      .addCase(updateSparePartMaintenancePlans.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(updateSparePartMaintenancePlans.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const index = state.spareParts.findIndex((sparePart) => sparePart.id === action.payload.id);
-        if (index !== -1) {
-          state.spareParts[index] = action.payload;
-        }
-      })
-      .addCase(updateSparePartMaintenancePlans.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      });
+            // Get by Hospital and Nomenclature
+     // fetchSparePartsByEmdnCode
+.addCase(fetchSparePartsByEmdnCode.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchSparePartsByEmdnCode.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.spareParts = action.payload;
+})
+.addCase(fetchSparePartsByEmdnCode.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+// fetchSparePartsByHospitalAndEmdnCode
+.addCase(fetchSparePartsByHospitalAndEmdnCode.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchSparePartsByHospitalAndEmdnCode.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.spareParts = action.payload;
+})
+.addCase(fetchSparePartsByHospitalAndEmdnCode.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+      // Get by Hospital
+.addCase(fetchSparePartsByHospitalId.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchSparePartsByHospitalId.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.spareParts = action.payload;
+})
+.addCase(fetchSparePartsByHospitalId.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+// Add Lot
+.addCase(addLotToSparePart.fulfilled, (state, action) => {
+  const index = state.spareParts.findIndex((s) => s.id === action.payload.id);
+  if (index !== -1) state.spareParts[index] = action.payload;
+})
+
+// Remove Lot
+.addCase(removeLotFromSparePart.fulfilled, (state, action) => {
+  const index = state.spareParts.findIndex((s) => s.id === action.payload.id);
+  if (index !== -1) state.spareParts[index] = action.payload;
+})
+
+
   },
 });
 

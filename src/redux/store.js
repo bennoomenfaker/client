@@ -14,7 +14,8 @@ import notificationReducer from "./slices/notificationSlice";
 import incidentReducer from "./slices/incidentSlice";
 import correctiveMaintenanceReducer from "./slices/correctiveMaintenanceSlice";
 import transferReducer from "./slices/transferSlice";
-
+import alertReducer from "./slices/alertSlice"
+import supplierSlice from "./slices/supplierSlice"
 const store = configureStore({
   reducer: {
     auth: authSlice,
@@ -32,6 +33,8 @@ const store = configureStore({
     incident: incidentReducer,
     correctiveMaintenance: correctiveMaintenanceReducer,
     transfer: transferReducer,
+    alert : alertReducer,
+    supplier: supplierSlice,
 
     },
 });

@@ -25,7 +25,6 @@ import {
 import IncidentsParService from "./dashboard/IncidentsParService";
 import EquipementsParService from "./dashboard/EquipementsParService";
 import StatutsIncidents from "./dashboard/StatutsIncidents";
-import IncidentsParEquipement from "./dashboard/IncidentsParEquipement";
 import EvolutionIncidents from "./dashboard/EvolutionIncidents";
 import EquipementsParStatut from "./dashboard/EquipementsParStatut ";
 import EquipmentsByBrandChart from "./dashboard/EquipmentsByBrandChart ";
@@ -33,7 +32,7 @@ import EquipmentsByBrandChart from "./dashboard/EquipmentsByBrandChart ";
 
 const MinistryAdminPage = () => {
   const dispatch = useDispatch();
-  const [selectedHospital, setSelectedHospital] = useState("");
+  const [selectedHospital, setSelectedHospital] = useState("7a34da16-6bd3-4cc6-8aa6-c1d512c2bf4e");
   const { hospitals } = useSelector((state) => state.hospital);
   const { equipmentList, nonReceivedEquipment, isLoading } = useSelector((state) => state.equipment);
   const { all: allIncidents, list: hospitalIncidents } = useSelector((state) => state.incident);
@@ -116,9 +115,6 @@ const MinistryAdminPage = () => {
       <StatutsIncidents data={hospitalIncidents} />
     </Box>
 
-    <Box mb={3}>
-      <IncidentsParEquipement data={hospitalIncidents} />
-    </Box>
 
     <Box mb={3}>
       <EvolutionIncidents data={hospitalIncidents} />

@@ -105,24 +105,26 @@ const ManageBrandsConsultListOfBrands = () => {
           <Grid container spacing={2} alignItems="center">
             <Grid item>
               <Button variant="contained" color="success" startIcon={<AddIcon />} onClick={() => navigate("/manage-brands/add-brand")}>
-                Ajouter
+                Ajouter une marque
               </Button>
             </Grid>
 
-            <Grid item>
-              <CSVLink
+            <Grid item xs>
+               <div style={{padding: '15px' , display:'flex' , flexDirection:'row' }}>
+                              <CSVLink
                 data={filteredBrands}
                 headers={[{ label: "Nom de la marque", key: "name" }]}
                 filename="marques.csv"
-                style={{ textDecoration: "none" }}
+                style={{ textDecoration: "none"  , marginRight:'25px'}}
               >
-                <Button variant="contained" color="primary">
+                <Button variant="outlined" color="primary">
                   Exporter CSV
                 </Button>
               </CSVLink>
                <Button variant="outlined" color="primary" onClick={() => exportToExcel()}>
                                           Exporter Excel
                                         </Button>
+               </div>
             </Grid>
 
             <Grid item xs>

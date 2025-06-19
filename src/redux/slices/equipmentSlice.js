@@ -56,6 +56,26 @@ export const createEquipment = createAsyncThunk(
   }
 );
 
+
+
+// Créer un nouvel équipement
+export const createEquipment1 = createAsyncThunk(
+  "equipment/create1",
+  async (equipmentData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/equipments/createEquipment`, equipmentData, {
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data; // Retourne les données de l'API en cas de succès
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur lors de la création de l'équipement.");
+    }
+  }
+);
+
 // Mettre à jour un équipement
 export const updateEquipment = createAsyncThunk(
   "equipment/update",
@@ -114,38 +134,7 @@ export const addMaintenancePlan = createAsyncThunk(
   }
 );
 
-// Récupérer les pièces détachées d'un équipement
-export const fetchSparePartsByEquipmentId = createAsyncThunk(
-  "equipment/fetchSpareParts",
-  async (equipmentId, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/equipments/${equipmentId}/spare-parts`, {
-        headers: getAuthHeaders(),
-      });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || "Erreur lors de la récupération des pièces détachées.");
-    }
-  }
-);
 
-// Ajouter une pièce détachée à un équipement
-export const addSparePart = createAsyncThunk(
-  "equipment/addSparePart",
-  async ({ equipmentId, sparePart }, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(`${API_BASE_URL}/equipments/${equipmentId}/spare-parts`, sparePart, {
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-      });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || "Erreur lors de l'ajout de la pièce détachée.");
-    }
-  }
-);
 
 // Rechercher un équipement via son code EMDN
 export const fetchEquipmentByEmdnCode = createAsyncThunk(
@@ -301,7 +290,7 @@ const equipmentSlice = createSlice({
     spareParts: [],
     isLoading: false,
     error: null,
-    
+    equipment: null,
   },
   reducers: {
     clearError: (state) => {
@@ -353,6 +342,11 @@ const equipmentSlice = createSlice({
         state.equipmentList.push(action.payload);
       })
 
+       // Créer un équipement
+      .addCase(createEquipment1.fulfilled, (state, action) => {
+        state.equipmentList.push(action.payload);
+      })
+
       // Mettre à jour un équipement
       .addCase(updateEquipment.fulfilled, (state, action) => {
         state.equipmentList = state.equipmentList.map((eq) =>
@@ -365,15 +359,7 @@ const equipmentSlice = createSlice({
         state.selectedEquipment = action.payload;
       })
 
-      // Récupérer les pièces détachées
-      .addCase(fetchSparePartsByEquipmentId.fulfilled, (state, action) => {
-        state.spareParts = action.payload;
-      })
-
-      // Ajouter une pièce détachée
-      .addCase(addSparePart.fulfilled, (state, action) => {
-        state.spareParts.push(action.payload);
-      })
+     
 
       // Rechercher un équipement par code EMDN
       .addCase(fetchEquipmentByEmdnCode.fulfilled, (state, action) => {
@@ -384,6 +370,10 @@ const equipmentSlice = createSlice({
       .addCase(fetchEquipmentBySerial.pending, (state) => {
         state.status = "loading";
         state.error = null;
+        state.selectedEquipment = null;
+        state.equipment =null;
+
+
       })
       .addCase(fetchEquipmentBySerial.fulfilled, (state, action) => {
         state.status = "succeeded";
@@ -415,6 +405,8 @@ const equipmentSlice = createSlice({
     })
     .addCase(changeEquipmentInterService.pending, (state) => {
       state.isLoading = true;
+      state.selectedEquipment = null;
+
     })
     .addCase(changeEquipmentInterService.fulfilled, (state, action) => {
       state.isLoading = false;

@@ -31,6 +31,8 @@ import Tooltip from '@mui/material/Tooltip';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import CategoryIcon from '@mui/icons-material/Category';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+
 import DomainIcon from '@mui/icons-material/Domain';
 import { fetchNotifications, updateNotificationAsRead, deleteNotification } from '../redux/slices/notificationSlice';
 import { triggerEquipmentMaintenanceCheck, triggerSparePartMaintenanceCheck } from '../redux/slices/maintenancePlanSlice ';
@@ -48,8 +50,12 @@ import Button from '@mui/material/Button';
 import { GridMoreVertIcon } from '@mui/x-data-grid';
 import HandymanIcon from '@mui/icons-material/Handyman';
 import HistoryIcon from '@mui/icons-material/History';
+import { fetchAlertsByHospitalId  , initializeWebSocket } from '../redux/slices/alertSlice';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 
 
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 
 
@@ -139,7 +145,7 @@ export default function NavBar({ onToggle }) {
   const [profileFetched, setProfileFetched] = useState(false);
   const notifications = useSelector((state) => state.notifications.list || []); // Récupérer la liste des notifications
   const [lastSeenNotificationTime, setLastSeenNotificationTime] = useState(null);
-
+  const hospitalId = sessionStorage.getItem("hospitalId")
   const unreadCount = useMemo(() => {
     if (!lastSeenNotificationTime) return notifications.filter((n) => !n.read).length;
   
@@ -153,7 +159,29 @@ export default function NavBar({ onToggle }) {
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [shouldNotifyToday, setShouldNotifyToday] = useState(false);
+  const alerts = useSelector((state) => state.alert.alerts);
+  const error = useSelector((state) => state.alert.error);
+  const [anchorElAlert, setAnchorElAlert] = useState(null);
+  const openAlert = Boolean(anchorElAlert);
+  useEffect(() => {
+    if (hospitalId) {
+      const x =dispatch(fetchAlertsByHospitalId(hospitalId));
+      console.log("hhh" , x)
+    }
+  }, [dispatch, hospitalId]);
+  console.log(alerts)
+  useEffect(() => {
+    initializeWebSocket(dispatch);
+  }, [dispatch]);
 
+  const handleOpenMenu = (event) => {
+    setAnchorElAlert(event.currentTarget);
+  };
+  
+  const handleCloseMenu = () => {
+    setAnchorElAlert(null);
+  };
+  
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
     setLastSeenNotificationTime(new Date().toISOString());
@@ -308,7 +336,10 @@ export default function NavBar({ onToggle }) {
   const handleConsultListUsersHospitalAdmins = () => {
     navigate('/manage-users/consult-users-by-hospital-admins');
   };
-
+  
+    const handleManageSupplier = () => {
+    navigate('/manage-supplier/suppliers');
+  };
   const handleConsultListEquipments = () => {
     navigate('/manage-equipment/equipments');
   };
@@ -359,6 +390,7 @@ export default function NavBar({ onToggle }) {
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
+    
         <Toolbar>
           <IconButton
             color="inherit"
@@ -375,6 +407,17 @@ export default function NavBar({ onToggle }) {
           <Typography variant="body1" noWrap component="div">
             {userInfo?.firstName || ''} {userInfo?.lastName || ''} - {getRoleDisplayName(userInfo?.role?.name)}
           </Typography>
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+
+          <Tooltip title="Alertes critiques">
+        <IconButton color="inherit" onClick={handleOpenMenu}>
+        <Badge badgeContent={alerts.length} color="error">
+      <WarningAmberIcon />
+    </Badge>
+  </IconButton>
+</Tooltip>
+
+
           {/* Icône Notifications avec Badge */}
           <Tooltip title="Notifications">
             <IconButton color="inherit" onClick={handleClick}>
@@ -383,6 +426,11 @@ export default function NavBar({ onToggle }) {
               </Badge>
             </IconButton>
           </Tooltip>
+                         <Tooltip title="Se déconnecter">
+  <IconButton color="inherit" onClick={handleLogout}>
+    <LogoutIcon />
+  </IconButton>
+</Tooltip>
 
           <Menu
             anchorEl={anchorEl}
@@ -480,6 +528,7 @@ export default function NavBar({ onToggle }) {
               Voir toutes les notifications
             </MenuItem>
           </Menu>
+          </Box>
 
           <Modal open={!!selectedNotification} onClose={handleCloseModal}>
             <Box
@@ -529,6 +578,53 @@ export default function NavBar({ onToggle }) {
             </DialogActions>
           </Dialog>
         </Toolbar>
+        
+
+        <Menu
+  anchorEl={anchorElAlert}
+  open={openAlert}
+  onClose={handleCloseMenu}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+  sx={{
+    '& .MuiPaper-root': {
+      width: 400, // élargi
+      maxHeight: '50vh',
+      borderRadius: 2,
+      overflowY: 'auto',
+      p: 1,
+    }
+  }}
+>
+  {error && (
+    <MenuItem disabled>
+      <ListItemText primary="Erreur de chargement des alertes" />
+    </MenuItem>
+  )}
+
+  {alerts.length === 0 && !error && (
+    <MenuItem disabled>
+      <ListItemText primary="Aucune alerte" />
+    </MenuItem>
+  )}
+
+  {alerts.map((alert) => (
+    <MenuItem key={alert._id} sx={{ alignItems: 'start' }}>
+      <Box>
+        <Box fontWeight="bold" whiteSpace="normal">
+          {alert.message}
+        </Box>
+        <Box fontSize="0.8rem" color="text.secondary">
+          {new Date(alert.timestamp).toLocaleString()}
+        </Box>
+      </Box>
+    </MenuItem>
+  ))}
+</Menu>
+
+   
+
+
       </AppBar>
       <Drawer variant="permanent" open={open}>
         <DrawerHeader>
@@ -644,6 +740,18 @@ export default function NavBar({ onToggle }) {
             )}
 
           </ListItem>
+               <ListItem disablePadding sx={{ display: 'block' }}>
+            { (userInfo?.hospitalAdmin || userInfo.maintenanceCompanyStaff || userInfo.maintenanceEngineer) && (
+              <ListItemButton onClick={() => navigate('/manageSparePart/consultListSpareParts')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Gérer les piéce de rechange" placement="right">
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <PrecisionManufacturingIcon />
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Gérer les piéce de rechange" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
           <ListItem disablePadding sx={{ display: 'block' }}>
             {userInfo?.hospitalAdmin && ( // Vérification pour Admin et SuperAdmin
               <ListItemButton onClick={handleConsultListBrands} sx={{ justifyContent: open ? 'initial' : 'center' }}>
@@ -672,8 +780,10 @@ export default function NavBar({ onToggle }) {
               </ListItemButton>
             )}
           </ListItem>
+          
 
           {/* Nouvel élément de liste pour le suivi des maintenances */}
+          
           <ListItem disablePadding sx={{ display: 'block' }}>
             {(userInfo?.hospitalAdmin  || userInfo?.maintenanceEngineer || userInfo?.maintenanceCompanyStaff) && (
               <ListItemButton onClick={handleTrackMaintenance} sx={{ justifyContent: open ? 'initial' : 'center' }}>
@@ -727,7 +837,19 @@ export default function NavBar({ onToggle }) {
               <ListItemButton onClick={() => navigate('/manageSla/consltSlaByMaintennaceProvider')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Consulter les SLA" placement="right">
                   <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
-                    <ReportProblemIcon />
+                    <FactCheckIcon  />
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Consulter les SLA" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
+           <ListItem disablePadding sx={{ display: 'block' }}>
+            { (userInfo?.hospitalAdmin || userInfo.maintenanceEngineer) && (
+              <ListItemButton onClick={() => navigate('/manageSla/consltSlaByMaintennaceByHospitalId')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Consulter les SLA" placement="right">
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <FactCheckIcon  />
                   </ListItemIcon>
                 </Tooltip>
                 <ListItemText primary="Consulter les SLA" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
@@ -735,6 +857,7 @@ export default function NavBar({ onToggle }) {
             )}
           </ListItem>
           <ListItem disablePadding sx={{ display: 'block' }}>
+            
             { (userInfo?.maintenanceEngineer || userInfo.hospitalAdmin )&& (
               <ListItemButton onClick={() => navigate('/manage-equipment/consultOldTransfertEquipment')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Consulter ancien transfére équipemnts" placement="right">
@@ -746,6 +869,32 @@ export default function NavBar({ onToggle }) {
               </ListItemButton>
             )}
           </ListItem>
+           <ListItem disablePadding sx={{ display: 'block' }}>
+            { (userInfo?.ministryAdmin )&& (
+              <ListItemButton onClick={() => navigate('/manage-equipment/consultOldTransfertEquipmentByMS')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Consulter ancien transfére équipemnts" placement="right">
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <HistoryIcon  />
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Consulter ancien transfére équipemnts" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
+           <ListItem disablePadding sx={{ display: 'block' }}>
+            {(userInfo?.hospitalAdmin || userInfo?.maintenanceEngineer) && ( // Vérification du rôle admin
+              <ListItemButton onClick={handleManageSupplier} sx={{ justifyContent: open ? 'initial' : 'center' }}>
+                <Tooltip title="Gérer les fournisseurs" placement="right">
+
+                  <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
+                    <LocalShippingIcon /> {/* Nouvelle icône */}
+                  </ListItemIcon>
+                </Tooltip>
+                <ListItemText primary="Gérer les fournisseurs" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
+              </ListItemButton>
+            )}
+          </ListItem>
+       
           <Divider />
           <ListItem disablePadding sx={{ display: 'block' }}>
             <ListItemButton onClick={handleLogout} sx={{ justifyContent: open ? 'initial' : 'center' }}>
