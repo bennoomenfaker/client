@@ -7,27 +7,23 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
+import PropTypes from 'prop-types';
 
-const MaintenanceCalendar = () => {
+
+const MaintenanceCalendarServisor = ({ maintenancePlans, correctiveMaintenances }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [openModal, setOpenModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const maintenancePlans = useSelector((state) => state.maintenancePlan.maintenancePlans);
-  const corrcMaintenance = useSelector((state) => state.correctiveMaintenance.listCorr);
-
-
-
   const events = useMemo(() => {
     const allEvents = [];
 
-    // Maintenances planifiées (uniquement avec equipmentId)
     maintenancePlans.forEach(plan => {
       if (plan.equipmentId && plan.maintenanceDate) {
         allEvents.push({
-          title: `Plan: ${plan.description.substring(0, 20)}...`,
+          title: `Plan: ${plan.description?.substring(0, 20)}...`,
           start: plan.maintenanceDate,
-          end: plan.maintenanceDate, // Ajout de la date de fin
+          end: plan.maintenanceDate,
           extendedProps: {
             type: 'plan',
             description: plan.description,
@@ -35,27 +31,25 @@ const MaintenanceCalendar = () => {
             status: 'Planifié',
             equipmentId: plan.equipmentId
           },
-          backgroundColor: '#2196F3', // Bleu pour planifié
+          backgroundColor: '#2196F3',
           borderColor: '#2196F3'
         });
       }
     });
 
-    // Maintenances correctives
-    corrcMaintenance.forEach(corr => {
+    correctiveMaintenances.forEach(corr => {
       if (corr.plannedDate) {
-        let color = '#9E9E9E'; // Gris par défaut
-        if (corr.status === 'Terminé') color = '#4CAF50'; // Vert
-        else if (corr.status === 'En cours') color = '#FFC107'; // Jaune
+        let color = '#9E9E9E';
+        if (corr.status === 'Terminé') color = '#4CAF50';
+        else if (corr.status === 'En cours') color = '#FFC107';
         else if (corr.status === 'En attente') {
-          // Rouge si date dépassée
           color = new Date(corr.plannedDate) < new Date() ? '#F44336' : '#FF9800';
         }
 
         allEvents.push({
-          title: `Corr: ${corr.description.substring(0, 20)}...`,
+          title: `Corr: ${corr.description?.substring(0, 20)}...`,
           start: corr.plannedDate,
-          end: corr.completedDate || corr.plannedDate, // Utilisation de completedDate si disponible
+          end: corr.completedDate || corr.plannedDate,
           extendedProps: {
             type: 'corrective',
             description: corr.description,
@@ -74,7 +68,8 @@ const MaintenanceCalendar = () => {
     });
 
     return allEvents;
-  }, [maintenancePlans, corrcMaintenance]);
+  }, [maintenancePlans, correctiveMaintenances]);
+
 
   const handleDateClick = (arg) => {
     setSelectedDate(arg.date);
@@ -91,17 +86,15 @@ const MaintenanceCalendar = () => {
   };
 
   return (
-   <Box sx={{  
-  p: 3, 
-  width: '100%', 
-  mx: 'auto', 
-  mt: 1,
-  minHeight: '400px', // 👈 Ajoute ça
-  backgroundColor: 'background.paper',
-  borderRadius: 4,
-  boxShadow: 3
-}}>
-
+    <Box sx={{  
+      p: 3, 
+      width: '100%', 
+      mx: 'auto', 
+      mt: 1,
+      backgroundColor: 'background.paper',
+      borderRadius: 4,
+      boxShadow: 3
+    }}>
       <Typography variant="h4" gutterBottom align="center" sx={{ 
         mb: 2,
         letterSpacing: 0.5
@@ -280,5 +273,9 @@ const MaintenanceCalendar = () => {
     </Box>
   );
 };
+MaintenanceCalendarServisor.propTypes = {
+  maintenancePlans: PropTypes.array.isRequired,
+  correctiveMaintenances: PropTypes.array.isRequired
+};
 
-export default MaintenanceCalendar;
+export default MaintenanceCalendarServisor

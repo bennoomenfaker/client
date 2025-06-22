@@ -15,6 +15,14 @@ import EquipmentsByBrandChart from "./dashboard/EquipmentsByBrandChart ";
 import { fetchAllMaintenancePlansByHospital } from "../redux/slices/maintenancePlanSlice ";
 import { fetchCorrectiveMaintenancesByHospital } from "../redux/slices/correctiveMaintenanceSlice";
 import MaintenanceCalendar from "./dashboard/MaintenanceCalendar"
+import {
+  fetchSlaComplianceStats,
+  fetchPenaltiesByHospital,
+  fetchPenaltiesByCompany,
+  fetchTopPenalizedEquipments
+} from "../redux/slices/slaSlice";
+import SlaGaugeChart from "./dashboard/SlaGaugeChart";
+
 
 const HospitalAdminPage = () => {
   const hospitalId = sessionStorage.getItem("hospitalId");
@@ -35,6 +43,8 @@ const HospitalAdminPage = () => {
   //console.log("Services:", serviceByHospital);
   //console.log("maintenanceplans:" , maintenancesPlans);
    //console.log("correctives maintenances:", corrcMaintenance);
+   /*// Si tu veux afficher aussi les pénalités du prestataire de maintenance, récupère son ID :
+ */
 
   // Dispatch pour récupérer les données nécessaires
   const dispatch = useDispatch();
@@ -46,7 +56,24 @@ const HospitalAdminPage = () => {
     dispatch(fetchEquipmentsByHospital(hospitalId));
     dispatch(fetchAllMaintenancePlansByHospital(hospitalId));
     dispatch(fetchCorrectiveMaintenancesByHospital(hospitalId))
+    dispatch(fetchSlaComplianceStats(hospitalId));
+    dispatch(fetchPenaltiesByHospital(hospitalId));
+    const companyId = sessionStorage.getItem("userId");
+if (companyId) {
+  dispatch(fetchPenaltiesByCompany(companyId));
+}
+
+dispatch(fetchTopPenalizedEquipments(hospitalId));
   }, [dispatch, hospitalId]);
+
+  const {
+  slaComplianceStatus,
+  penaltiesByHospital,
+  penaltiesByCompany,
+  topPenalizedEquipments,
+} = useSelector((state) => state.sla);
+
+
 
 
   // Traitement des données si nécessaire (ex : filtrage ou transformation)
@@ -64,6 +91,13 @@ const HospitalAdminPage = () => {
     serviceName: service,
     incidentCount: incidentsByService[service],
   }));
+  const interpretSlaConformity = (rate) => {
+  if (rate >= 90) return "✅ Excellent niveau de conformité. Les délais SLA sont bien respectés.";
+  if (rate >= 75) return "🟡 Conformité correcte mais améliorable. Surveillez les délais critiques.";
+  if (rate >= 50) return "🔴 Faible conformité. Risque élevé de pénalités et d'insatisfaction.";
+  return "❌ Niveau de conformité critique. Mesures urgentes à prendre.";
+};
+
 
  return (
     <Box sx={{ display: "flex", minHeight: '100vh' , mt: 8 , ml:-4 }}>
@@ -92,54 +126,92 @@ const HospitalAdminPage = () => {
               Statistique des incidents et équipements
             </Typography>
           </Box>
+{/* Main Content */}
+<Grid container spacing={4}  >
+  {/* 🗓️ Calendrier en première ligne */}
+  <Grid item xs={12}>
+    <MaintenanceCalendar />
+  </Grid>
 
-          {/* Main Content */}
-          <Grid container spacing={4}>
-            {/* Calendrier en pleine largeur */}
-            <Grid item xs={12}>
-              <MaintenanceCalendar />
-            </Grid>
+  {/*  Conformité SLA & 💰 Pénalités */}
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3 }}>
+      <Typography variant="h6" gutterBottom>
+         Conformité SLA
+      </Typography>
 
-            {/* Première ligne de graphiques */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                <IncidentsParService data={incidentsServiceData} />
-              </Paper>
-            </Grid>
+      {slaComplianceStatus && (
+        <SlaGaugeChart complianceRate={slaComplianceStatus.complianceRate} />
+      )}
 
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                <EquipementsParService data={equipmentList} />
-              </Paper>
-            </Grid>
+      <Typography>Total incidents : {slaComplianceStatus?.totalIncidents}</Typography>
+      <Typography>Respectés : {slaComplianceStatus?.slaRespected}</Typography>
+      <Typography>Violation réponse : {slaComplianceStatus?.responseViolated}</Typography>
+      <Typography>Violation résolution : {slaComplianceStatus?.resolutionViolated}</Typography>
+      <Typography>Taux conformité : {slaComplianceStatus?.complianceRate.toFixed(2)}%</Typography>
+      <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic', color: 'gray' }}>
+        {interpretSlaConformity(slaComplianceStatus?.complianceRate || 0)}
+      </Typography>
+    </Paper>
+  </Grid>
 
-            {/* Deuxième ligne de graphiques */}
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                <StatutsIncidents data={allIncidents} />
-              </Paper>
-            </Grid>
+  {/*  Top équipements pénalisés */}
 
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                <EquipementsParStatut data={equipmentList} />
-              </Paper>
-            </Grid>
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3 }}>
+         <Typography variant="h6" gutterBottom>
+         Top 5 équipements les plus pénalisés
+      </Typography>
+      <ul>
+        {topPenalizedEquipments?.map((eq) => (
+          <li key={eq.serialNumber}>
+            Code série: {eq.serialNumber} – Pénalités : {eq.totalPenalty.toFixed(2)} DT
+          </li>
+        ))}
+      </ul>
+      </Paper>
+  </Grid>
 
-            
 
-            {/* Graphique en pleine largeur */}
-            <Grid item xs={12} >
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                <EquipmentsByBrandChart />
-              </Paper>
-            </Grid>
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 3 }}>
-                <EvolutionIncidents data={allIncidents} />
-              </Paper>
-            </Grid>
-          </Grid>
+
+  {/* 📈 Autres statistiques (incidents, équipements, statuts…) */}
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+      <IncidentsParService data={incidentsServiceData} />
+    </Paper>
+  </Grid>
+
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+      <EquipementsParService data={equipmentList} />
+    </Paper>
+  </Grid>
+
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+      <StatutsIncidents data={allIncidents} />
+    </Paper>
+  </Grid>
+
+  <Grid item xs={12} md={6}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+      <EquipementsParStatut data={equipmentList} />
+    </Paper>
+  </Grid>
+
+  <Grid item xs={12}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3, height: '100%' }}>
+      <EquipmentsByBrandChart />
+    </Paper>
+  </Grid>
+
+  <Grid item xs={12}>
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 3 }}>
+      <EvolutionIncidents data={allIncidents} />
+    </Paper>
+  </Grid>
+</Grid>
+
         </Box>
       </Box>
     </Box>

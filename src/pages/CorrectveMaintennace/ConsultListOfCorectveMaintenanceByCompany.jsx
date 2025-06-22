@@ -75,6 +75,8 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
         estimatedCost: item.estimatedCost,
     })), [maintennaceCorrective]);
 
+    console.log(rows)
+
     const filteredCorrectiveMaintenances = useMemo(() => {
         return rows?.filter((maintenance) => {
             const searchMatch =
@@ -102,7 +104,7 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
       case 'en attente':
         color = '#FFA726'; // orange clair
         break;
-      case 'planifié':
+      case 'en cours':
         color = '#29B6F6'; // bleu
         break;
       case 'terminé':

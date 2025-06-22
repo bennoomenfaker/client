@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:9999/equipment-service/api';
 
-// 🔐 Headers avec JWT
+//  Headers avec JWT
 const getAuthHeaders = () => {
   const token = sessionStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};

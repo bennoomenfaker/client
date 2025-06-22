@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { DataGrid } from "@mui/x-data-grid";
-import { Button, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from "@mui/material";
+import { Button, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton, Box, Paper } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteHospital, fetchHospitals } from "../../redux/slices/hospitalSlice";
 import { useNavigate } from "react-router-dom";
@@ -126,81 +126,130 @@ const ManageHospitalConsultListHospitals = () => {
       };
 
   return (
-    <div style={{ display: "flex" }}>
-      <NavBar onToggle={() => { }} />
-      <div style={{ width: "100%", padding: "20px", marginTop: 50 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={() => navigate("/manage-hospitals/create-new-hospital")}
-            startIcon={<AddIcon />}
-            sx={{ textTransform: "none", fontWeight: "bold", padding: "8px 16px", borderRadius: "8px", boxShadow: 2 }}
-          >
-            Créer un hôpital
+  <div style={{ display: "flex" }}>
+  <NavBar onToggle={() => { }} />
+
+  <div style={{ width: "100%", padding: "20px", marginTop: 50 }}>
+    {/* Barre supérieure : Nouveau + Rechercher + Export */}
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 2,
+        mb: 3,
+      }}
+    >
+      {/* Gauche : Créer */}
+      <Button
+        variant="contained"
+        color="success"
+        onClick={() => navigate("/manage-hospitals/create-new-hospital")}
+        startIcon={<AddIcon />}
+        sx={{
+          textTransform: "none",
+          fontWeight: "bold",
+          padding: "8px 16px",
+          borderRadius: "8px",
+          boxShadow: 2,
+        }}
+      >
+        Créer un hôpital
+      </Button>
+
+      {/* Centre : Recherche */}
+      <TextField
+        label="Rechercher un hôpital"
+        variant="outlined"
+        value={search}
+        onChange={handleSearchChange}
+        placeholder="Nom ou localisation..."
+        sx={{
+          flexGrow: 1,
+          minWidth: 250,
+          maxWidth: 400,
+          backgroundColor: "white",
+          borderRadius: "8px",
+          boxShadow: 1,
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      {/* Droite : Export */}
+      <Box sx={{ display: "flex", gap: 1 }}>
+        <CSVLink
+          data={rows}
+          headers={columns.map((col) => ({
+            label: col.headerName,
+            key: col.field,
+          }))}
+          filename="hospitals_list.csv"
+          style={{ textDecoration: "none" }}
+        >
+          <Button variant="outlined" color="primary">
+            Exporter CSV
           </Button>
+        </CSVLink>
 
-          <CSVLink
-            data={rows} // Données à exporter
-            headers={columns.map(col => ({ label: col.headerName, key: col.field }))}
-            filename={"hospitals_list.csv"} // Nom du fichier CSV
-            className="btn btn-outline-success"
-            style={{
-             
-              textDecoration:"none"
-            }}
-          >
-                <Button variant="outlined" color="primary">
-                Exporter CSV
-                </Button>
-          </CSVLink>
-            <Button variant="outlined" color="primary" onClick={() => exportToExcel()}>
-                                      Exporter Excel
-                                    </Button>
+        <Button variant="outlined" color="primary" onClick={exportToExcel}>
+          Exporter Excel
+        </Button>
+      </Box>
+    </Box>
 
-          <TextField
-            label="Rechercher un hôpital"
-            variant="outlined"
-            value={search}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ width: "40%", backgroundColor: "white", borderRadius: "8px", boxShadow: 1 }}
-          />
-        </div>
+    {/* Tableau des hôpitaux */}
+    <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        pageSize={rowsPerPage}
+        rowsPerPageOptions={[5, 10, 25]}
+        onPageSizeChange={(newPageSize) => setRowsPerPage(newPageSize)}
+        page={page}
+        onPageChange={(newPage) => setPage(newPage)}
+        sortingOrder={["asc", "desc"]}
+        sortModel={sortModel}
+        onSortModelChange={handleSortModelChange}
+        autoHeight
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#f5f5f5',
+            fontWeight: 'bold',
+          },
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#f0f8ff',
+          },
+        }}
+      />
+    </Paper>
+  </div>
 
-        <div style={{ height: 400, width: '100%', marginTop: 20 }}>
-          <DataGrid
-            rows={rows} // Utiliser les données filtrées
-            columns={columns}
-            pageSize={rowsPerPage}
-            rowsPerPageOptions={[5, 10, 25]}
-            onPageSizeChange={(newPageSize) => setRowsPerPage(newPageSize)}
-            page={page}
-            onPageChange={(newPage) => setPage(newPage)}
-            sortingOrder={['asc', 'desc']}
-            sortModel={sortModel}  // Contrôler le modèle de tri ici
-            onSortModelChange={handleSortModelChange} // Gérer les changements de tri
-          />
-        </div>
-      </div>
+  {/* Modal de confirmation */}
+  <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+    <DialogTitle>Confirmation</DialogTitle>
+    <DialogContent>
+      <DialogContentText>
+        Voulez-vous désactiver cet hôpital ?
+      </DialogContentText>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setOpenDialog(false)} color="primary">
+        Annuler
+      </Button>
+      <Button onClick={confirmDelete} color="error">
+        Supprimer
+      </Button>
+    </DialogActions>
+  </Dialog>
+</div>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Confirmation</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Voulez-vous désactiver cet hôpital ?</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} color="primary">Annuler</Button>
-          <Button onClick={confirmDelete} color="error">Supprimer</Button>
-        </DialogActions>
-      </Dialog>
-    </div>
   );
 };
 

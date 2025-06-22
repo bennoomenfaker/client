@@ -61,6 +61,7 @@ import UpdateSpart from './pages/equipment/spareParts/UpdateSpart';
 import ConsultSLAByHospitalId from './pages/SLA/ConsultSLAByHospitalId';
 import UpdateSLA from './pages/SLA/UpdateSLA';
 import ManageSuppliersCreateSupplier from './pages/supplier/ManageSuppliersCreateSupplier';
+import ConsultOldTransferedEquipmentByMS from './pages/equipment/ConsultOldTransferedEquipmentByMS';
 
 function App() {
   const profile = useSelector((state) => state.auth.user);
@@ -330,7 +331,10 @@ function App() {
           path={`/manageSla/consltSlaByMaintennaceProvider`}
           element={isAuth ? (profile.maintenanceCompanyStaff  ? <ConsultSlaByProvider /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
         />
-     
+     <Route
+          path={`/manage-equipment/consultOldTransfertEquipmentByMS`}
+          element={isAuth ? (profile.ministryAdmin  ? <ConsultOldTransferedEquipmentByMS /> : <Navigate to="/401" replace />) : <Navigate to="/" replace />}
+        />
      
 <Route
           path={`/manageSla/consltSlaByMaintennaceByHospitalId`}

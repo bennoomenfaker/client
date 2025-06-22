@@ -133,6 +133,74 @@ export const checkSlaCompliance = createAsyncThunk(
 );
 
 
+
+
+
+// 📊 1. Obtenir les statistiques de conformité SLA d’un hôpital
+export const fetchSlaComplianceStats = createAsyncThunk(
+  "sla/fetchSlaComplianceStats",
+  async (hospitalId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/slas/compliance/${hospitalId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur SLA compliance");
+    }
+  }
+);
+
+// 📊 2. Total des pénalités par hôpital
+export const fetchPenaltiesByHospital = createAsyncThunk(
+  "sla/fetchPenaltiesByHospital",
+  async (hospitalId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/slas/penalties/hospital/${hospitalId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur total pénalités hôpital");
+    }
+  }
+);
+
+// 📊 3. Total des pénalités par prestataire
+export const fetchPenaltiesByCompany = createAsyncThunk(
+  "sla/fetchPenaltiesByCompany",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/slas/penalties/company/${companyId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur total pénalités prestataire");
+    }
+  }
+);
+
+// 📊 4. Top 5 équipements les plus pénalisés
+export const fetchTopPenalizedEquipments = createAsyncThunk(
+  "sla/fetchTopPenalizedEquipments",
+  async (hospitalId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/slas/top-penalized-equipment/${hospitalId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Erreur top équipements pénalisés");
+    }
+  }
+);
+
+
 const slaSlice = createSlice({
   name: "sla",
   initialState: {
@@ -143,6 +211,9 @@ const slaSlice = createSlice({
     error: null,
     slaComplianceStatus: null,
     slasByHospital: [],
+  penaltiesByHospital: null,
+  penaltiesByCompany: null,
+  topPenalizedEquipments: [],
 
   },
   reducers: {
@@ -247,6 +318,64 @@ const slaSlice = createSlice({
   state.isLoading = false;
   state.error = action.payload;
 })
+
+
+
+
+
+
+// 🎯 Compliance stats
+.addCase(fetchSlaComplianceStats.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchSlaComplianceStats.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.slaComplianceStatus = action.payload;
+})
+.addCase(fetchSlaComplianceStats.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+// 💰 Total pénalités hôpital
+.addCase(fetchPenaltiesByHospital.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchPenaltiesByHospital.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.penaltiesByHospital = action.payload;
+})
+.addCase(fetchPenaltiesByHospital.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+// 💼 Total pénalités prestataire
+.addCase(fetchPenaltiesByCompany.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchPenaltiesByCompany.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.penaltiesByCompany = action.payload;
+})
+.addCase(fetchPenaltiesByCompany.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
+// 🏆 Top équipements pénalisés
+.addCase(fetchTopPenalizedEquipments.pending, (state) => {
+  state.isLoading = true;
+})
+.addCase(fetchTopPenalizedEquipments.fulfilled, (state, action) => {
+  state.isLoading = false;
+  state.topPenalizedEquipments = action.payload;
+})
+.addCase(fetchTopPenalizedEquipments.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+})
+
 
   },
 });

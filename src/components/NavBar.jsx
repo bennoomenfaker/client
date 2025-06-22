@@ -741,7 +741,7 @@ export default function NavBar({ onToggle }) {
 
           </ListItem>
                <ListItem disablePadding sx={{ display: 'block' }}>
-            { (userInfo?.hospitalAdmin || userInfo.maintenanceCompanyStaff || userInfo.maintenanceEngineer) && (
+            { (userInfo?.hospitalAdmin  || userInfo.maintenanceEngineer) && (
               <ListItemButton onClick={() => navigate('/manageSparePart/consultListSpareParts')} sx={{ justifyContent: open ? 'initial' : 'center' }}>
                 <Tooltip title="Gérer les piéce de rechange" placement="right">
                   <ListItemIcon sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: open ? 0 : 'auto' }}>
@@ -894,8 +894,7 @@ export default function NavBar({ onToggle }) {
               </ListItemButton>
             )}
           </ListItem>
-       
-          <Divider />
+        {/* <Divider />
           <ListItem disablePadding sx={{ display: 'block' }}>
             <ListItemButton onClick={handleLogout} sx={{ justifyContent: open ? 'initial' : 'center' }}>
               <Tooltip title="Se déconnecter" placement="right">
@@ -907,7 +906,8 @@ export default function NavBar({ onToggle }) {
               </Tooltip>
               <ListItemText primary="Se déconnecter" primaryTypographyProps={{ variant: 'body2' }} sx={{ opacity: open ? 1 : 0 }} />
             </ListItemButton>
-          </ListItem>
+          </ListItem> */}
+         
         </List>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>

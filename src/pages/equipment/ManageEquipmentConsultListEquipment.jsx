@@ -189,12 +189,12 @@ const ManageEquipmentConsultListEquipment = () => {
                 <SwapHorizIcon color="info" />
               </IconButton>
             </Tooltip>
-      
+            {role !== "ROLE_SERVICE_SUPERVISOR" && (
             <Tooltip title="Transfert Inter-Hôpital">
               <IconButton onClick={() => navigate(`/manage-equipment/transferEquipmentInterHospital/${params.row.id}`, { state: params.row })}>
                 <CompareArrowsIcon color="secondary" />
               </IconButton>
-            </Tooltip>
+            </Tooltip>)}
       
             <Tooltip title="Signaler une panne">
               <IconButton onClick={() => navigate(`/manage-incident/reportIncident/equipment/serialCode/${params.row.serialCode}/equipmentId/${params.row.id}`)}>

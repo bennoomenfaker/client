@@ -26,15 +26,14 @@ const ConsultListIncident = () => {
   const { list, isLoading: isIncidentLoading } = useSelector((state) => state.incident);
   const slaComplianceStatus = useSelector((state) => state.sla.slaComplianceStatus);
   const isLoading = useSelector((state) => state.sla.isLoading);
-
+  const serviceId = sessionStorage.getItem("serviceId");
+  const role = sessionStorage.getItem("role");
   const [searchText, setSearchText] = useState("");
-  const loading = isIncidentLoading || false;
   const [openDialog, setOpenDialog] = useState(false);
   const [openDialog1, setOpenDialog1] = useState(false);
 
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
   const [filterType, setFilterType] = useState("all");
-
 
   useEffect(() => {
     const loadIncidents = async () => {
@@ -76,45 +75,52 @@ const ConsultListIncident = () => {
     );
   };
   const filteredIncidents = useMemo(() => {
-    const lowerSearch = searchText.toLowerCase();
+  const lowerSearch = searchText.toLowerCase();
 
-    return list.filter((incident) => {
-      const status = incident.incident?.status || "";
-      const validatedBy = incident.incident?.validatedBy;
-      const validatedAt = incident.incident?.validatedAt;
-      const resolvedBy = incident.incident?.resolvedBy;
+  return list.filter((incident) => {
+    const status = incident.incident?.status || "";
+    const validatedBy = incident.incident?.validatedBy;
+    const validatedAt = incident.incident?.validatedAt;
 
-      // Filtrage par type
-      if (filterType === "validated") {
-        if (!(validatedBy && validatedAt) || status === "Résolu") return false;
-      } else if (filterType === "pending") {
-        if (validatedBy || validatedAt || status === "Résolu") return false;
-      } else if (filterType === "resolved") {
-        if (status !== "Résolu") return false;
+    // 🔒 FILTRAGE PAR SERVICE SI ROLE = ROLE_SERVICE_SUPERVISOR
+    if (role === "ROLE_SERVICE_SUPERVISOR") {
+      const incidentServiceId = incident.hospitalServiceEntity?.id;
+      if (!incidentServiceId || incidentServiceId !== serviceId) {
+        return false;
       }
+    }
 
-      // Recherche texte
-      const equipmentSerial = incident.equipment?.serialCode?.toLowerCase() || "";
-      const description = incident.incident?.description?.toLowerCase() || "";
-      const reporterName = incident.userDTO
-        ? `${incident.userDTO.firstName} ${incident.userDTO.lastName}`.toLowerCase()
-        : "";
-      const reportedAt = incident.incident?.reportedAt
-        ? new Date(incident.incident.reportedAt).toLocaleString().toLowerCase()
-        : "";
-      const serviceName = incident.hospitalServiceEntity?.name?.toLowerCase() || "";
-      const severity = incident.incident?.severity?.toLowerCase() || "";
+    // 👇 Filtrage par type (déjà existant)
+    if (filterType === "validated") {
+      if (!(validatedBy && validatedAt) || status === "Résolu") return false;
+    } else if (filterType === "pending") {
+      if (validatedBy || validatedAt || status === "Résolu") return false;
+    } else if (filterType === "resolved") {
+      if (status !== "Résolu") return false;
+    }
 
-      return (
-        equipmentSerial.includes(lowerSearch) ||
-        description.includes(lowerSearch) ||
-        reporterName.includes(lowerSearch) ||
-        reportedAt.includes(lowerSearch) ||
-        serviceName.includes(lowerSearch) ||
-        severity.includes(lowerSearch)
-      );
-    });
-  }, [filterType, list, searchText]);
+    // 🔎 Recherche texte (déjà existante)
+    const equipmentSerial = incident.equipment?.serialCode?.toLowerCase() || "";
+    const description = incident.incident?.description?.toLowerCase() || "";
+    const reporterName = incident.userDTO
+      ? `${incident.userDTO.firstName} ${incident.userDTO.lastName}`.toLowerCase()
+      : "";
+    const reportedAt = incident.incident?.reportedAt
+      ? new Date(incident.incident.reportedAt).toLocaleString().toLowerCase()
+      : "";
+    const serviceName = incident.hospitalServiceEntity?.name?.toLowerCase() || "";
+    const severity = incident.incident?.severity?.toLowerCase() || "";
+
+    return (
+      equipmentSerial.includes(lowerSearch) ||
+      description.includes(lowerSearch) ||
+      reporterName.includes(lowerSearch) ||
+      reportedAt.includes(lowerSearch) ||
+      serviceName.includes(lowerSearch) ||
+      severity.includes(lowerSearch)
+    );
+  });
+}, [filterType, list, searchText, role, serviceId]);
 
 
 
@@ -145,14 +151,18 @@ const ConsultListIncident = () => {
         <React.Fragment>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Tooltip title="Consulter l'incident">
-              <IconButton
-                size="small"
-                aria-label="consulter"
-                color="primary"
-                onClick={() => navigate(`/manage-incident/consulIncident/${params.row.incidentId}`, {
-                  state: params.row.originalIncident
-                })}
-              >
+             <IconButton
+                               size="small"
+                               aria-label="consulter"
+                               color="primary"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 navigate(`/manage-incident/consulIncident/${params.row.id}`, {
+                                   state: params.row.originalIncident
+                                 });
+                               }}
+             
+                             >
                 <VisibilityIcon />
               </IconButton>
             </Tooltip>
