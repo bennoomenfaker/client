@@ -32,7 +32,6 @@ const ConsultOldTransferedEquipmentByMS = () => {
   const handleHospitalChange = (event) => {
     setSelectedHospital(event.target.value);
   };
-  console.log(listOfOldTransfertEquiment)
 
   const filteredTransferEquipment = listOfOldTransfertEquiment.filter(item =>
     item?.equipment?.nom.toLowerCase().includes(search.toLowerCase()) ||

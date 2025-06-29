@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Autocomplete, TextField, Button, Box, Paper, Typography, Grid } from "@mui/material";
-
+import {  fetchSuppliersByHospital } from "../../../redux/slices/supplierSlice";
 import NavBar from "../../../components/NavBar";
 import { createSparePart } from "../../../redux/slices/sparePartSlice";
 import { fetchEMDNCodes } from "../../../redux/slices/emdnNomenclatureSlice";
@@ -32,6 +32,11 @@ const ManageSparePartsCreateNewSparePart = () => {
     dispatch(fetchEMDNCodes());
   }, [dispatch]);
 
+   useEffect(() => {
+       dispatch(fetchSuppliersByHospital(hospitalId));
+     }, [dispatch, hospitalId]);
+   
+
   const flattenEMDNHierarchy = (data) => {
     let flatList = [];
     const traverse = (items, parentCode = "") => {
@@ -53,6 +58,7 @@ const ManageSparePartsCreateNewSparePart = () => {
       <span style={{ color: "red", marginLeft: "4px" }}>*</span>
     </span>
   );
+  const listSuppliers = useSelector((state) => state.supplier.suppliers);
 
   const flatEMDNList = flattenEMDNHierarchy(emdn);
 
@@ -141,8 +147,19 @@ const ManageSparePartsCreateNewSparePart = () => {
                 />
               </Grid>
               <Grid item xs={6}>
-                <TextField label="Fournisseur" name="supplier" value={formData.supplier} onChange={handleChange} fullWidth required />
-              </Grid>
+  <Autocomplete
+    options={listSuppliers}
+    getOptionLabel={(option) => option.name}
+    onChange={(event, newValue) => {
+      setFormData((prevData) => ({
+        ...prevData,
+        supplier: newValue ? newValue.name : ""
+      }));
+    }}
+    renderInput={(params) => (
+      <TextField {...params} label="Fournisseur" fullWidth required />
+    )}
+  />              </Grid>
             </Grid>
 
             <Typography variant="h6" mt={3}>Lots</Typography>

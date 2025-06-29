@@ -75,7 +75,6 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
         estimatedCost: item.estimatedCost,
     })), [maintennaceCorrective]);
 
-    console.log(rows)
 
     const filteredCorrectiveMaintenances = useMemo(() => {
         return rows?.filter((maintenance) => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNonReceivedEquipment , fetchEquipmentsByHospital } from "../../../redux/slices/equipmentSlice";
 import NavBar from "../../../components/NavBar";
-import { Box, Button, TextField, InputAdornment, Grid, IconButton, CircularProgress } from "@mui/material";
+import { Box, Button, TextField, InputAdornment, Grid, IconButton, CircularProgress, Chip } from "@mui/material";
 import { Search as SearchIcon, Edit as EditIcon, Add as AddIcon } from "@mui/icons-material";
 import { DataGrid } from "@mui/x-data-grid";
 import { CSVLink } from "react-csv"; // Importation du package CSVLink pour l'exportation en CSV
@@ -11,6 +11,14 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { fetchHospitals } from "../../../redux/slices/hospitalSlice";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+// Importez les icônes que vous utilisez
+import ReportIcon from '@mui/icons-material/Report'; // Pour "en panne"
+import ErrorIcon from '@mui/icons-material/Error'; // Pour "en maintenance"
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Pour "en service"
+import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn'; // Suggestion pour "hors service"
+import HourglassTopIcon from '@mui/icons-material/HourglassTop'; // Suggestion pour "en attente"
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline'; // Pour les statuts inconnus
+
 
 
 const EquipmentComponent = () => {
@@ -55,7 +63,61 @@ const EquipmentComponent = () => {
     );
   }, [search, nonReceivedEquipment, equipmentList, selectedHospitalId]);
   
+// 1. La fonction qui génère le Chip
+const renderStatusChipEquip = (status) => {
+  // Si le statut est vide ou non défini, on ne rend rien ou un chip par défaut
+  if (!status) {
+    return <Chip label="Indéfini" size="small" />;
+  }
+  
+  const normalizedStatus = status.toLowerCase();
 
+  // Mapping pour les couleurs et les styles
+  const statusConfig = {
+    "en panne": { 
+      label: "En Panne", 
+      icon: <ReportIcon />,
+      sx: { borderColor: '#d32f2f', color: '#d32f2f', backgroundColor: '#fdecea' } 
+    },
+    "en maintenance": { 
+      label: "En Maintenance", 
+      icon: <ErrorIcon />,
+      sx: { borderColor: '#ed6c02', color: '#ed6c02', backgroundColor: '#fff4e5' }
+    },
+    "en service": { 
+      label: "En Service", 
+      icon: <CheckCircleIcon />,
+      sx: { borderColor: '#2e7d32', color: '#2e7d32', backgroundColor: '#ebf9eb' }
+    },
+    "hors service": { 
+      label: "Hors Service", 
+      icon: <DoNotDisturbOnIcon />,
+      sx: { borderColor: '#757575', color: '#757575', backgroundColor: '#f0f0f0' }
+    },
+    "en attente de réception": { 
+      label: "En Attente", 
+      icon: <HourglassTopIcon />,
+      sx: { borderColor: '#1976d2', color: '#1976d2', backgroundColor: '#e8f4fd' }
+    },
+    // AMÉLIORATION : Un cas par défaut pour les statuts imprévus
+    default: {
+      label: status,
+      icon: <HelpOutlineIcon />,
+      sx: { borderColor: 'grey', color: 'grey', backgroundColor: '#fafafa' }
+    }
+  };
+
+  const config = statusConfig[normalizedStatus] || statusConfig.default;
+   return (
+    <Chip
+      variant="outlined"
+      size="small"
+      icon={config.icon}
+      label={config.label}
+      sx={config.sx} // On utilise la propriété `sx` pour le style dynamique
+    />
+  );
+};
   // Gérer la recherche
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
@@ -86,56 +148,13 @@ const EquipmentComponent = () => {
       flex: 1,
       sortable: true,
     },
-    {
-      field: "status",
-      headerName: "Statut",
-      flex: 1,
-      sortable: true,
-      renderCell: (params) => {
-        const status = params.value?.toLowerCase();
-    
-        let color = "#ccc";
-        let bgColor = "#eee";
-    
-        if (status === "en panne") {
-          color = "#fff";
-          bgColor = "#e53935"; // rouge
-        } else if (status === "en service") {
-          color = "#fff";
-          bgColor = "#43a047"; // vert
-        } else if (status === "en maintenance") {
-          color = "#fff";
-          bgColor = "#fb8c00"; // orange
-        } else if (status === "hors service") {
-          color = "#fff";
-          bgColor = "#757575"; // gris foncé
-        } else if (status === "en attente de réception") {
-          color = "#fff";
-          bgColor = "#1976d2"; // gris foncé
-        }
-    
-        return (
-            <span
-              style={{
-                padding: "6px 12px",
-                borderRadius: "20px",
-                backgroundColor: bgColor,
-                color: color,
-                fontWeight: "bold",
-                textTransform: "capitalize",
-                minWidth: "155px",  // largeur minimale uniforme
-                height: "35px",     // hauteur fixe
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {params.value}
-            </span>
-          );
-          
-      },
-    },
+ {
+    field: "status",
+    headerName: "Statut",
+    flex: 1,
+    // CORRECTION : On passe directement `params.value` à la fonction de rendu
+    renderCell: (params) => renderStatusChipEquip(params.value),
+  },
     
     {
       field: "lifespan",
@@ -282,8 +301,6 @@ const EquipmentComponent = () => {
           <DataGrid
             rows={filteredEquipment}
             columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 25]}
             checkboxSelection
             disableSelectionOnClick
             loading={isLoading}

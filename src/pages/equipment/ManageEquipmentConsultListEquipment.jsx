@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import  React,{ useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { IconButton, Button, TextField, InputAdornment, Box, Select, MenuItem, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip , CircularProgress } from "@mui/material";
+import { IconButton, Button, TextField, InputAdornment, Box, Select, MenuItem, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip , CircularProgress, Chip } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -16,8 +16,12 @@ import { toast } from "react-toastify";
 import ReportIcon from "@mui/icons-material/Report"; 
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
-const NavBar = React.lazy(() => import("../../components/NavBar"));
+import ErrorIcon from '@mui/icons-material/Error'; // Pour "en maintenance"
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Pour "en service"
+import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn'; // Suggestion pour "hors service"
+import HourglassTopIcon from '@mui/icons-material/HourglassTop'; // Suggestion pour "en attente"
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline'; // Pour les statuts inconnus
+import NavBar from "../../components/NavBar";
 import  SearchIcon from "@mui/icons-material/Search";
 import EditIcon  from"@mui/icons-material/Edit";
 
@@ -69,93 +73,171 @@ const ManageEquipmentConsultListEquipment = () => {
     setOpenDialog(false);
   };
 
-  // **🔍 Filtrage des équipements selon le rôle**
-  let filteredEquipments = equipments.filter((equipment) =>
+ // **🔍 Filtrage des équipements selon le rôle et la recherche**
+let filteredEquipments = equipments.filter((equipment) => {
+  // Garde la recherche insensible à la casse
+  const searchTerm = search.toLowerCase();
+
+  // Condition de recherche générale (renvoie true si l'un des champs correspond)
+  const matchesSearch = 
+    equipment.nom.toLowerCase().includes(searchTerm) ||
+    equipment.status.toLowerCase().includes(searchTerm) ||
+    equipment.serialCode.toLowerCase().includes(searchTerm) ||
+    
+    // --- AJOUTS ---
+    // 1. Recherche par nom du fournisseur (avec vérification que `supplier` existe)
+    (equipment.supplier?.name || '').toLowerCase().includes(searchTerm) ||
+    
+    // 2. Recherche par durée de vie (convertie en texte)
+    String(equipment.lifespan).includes(searchTerm) ||
+
+    // 3. Recherche par montant (converti en texte)
+    String(equipment.amount).includes(searchTerm);
+    
+  // Combinaison de tous les filtres
+  return (
     (role === "ROLE_SERVICE_SUPERVISOR" ? equipment.serviceId === userServiceId : true) &&
     (selectedService === "" || equipment.serviceId === selectedService) &&
-    (equipment.nom.toLowerCase().includes(search.toLowerCase()) ||
-      equipment.serialCode.toLowerCase().includes(search.toLowerCase()))
+    matchesSearch // On utilise notre condition de recherche ici
   );
-  const columns = [
-    { field: "serialCode", headerName: "Code Série", width: 115 },
-    { field: "nom", headerName: "Nom", width: 210 , cellClassName: 'left-align-cell' },
-   {
-  field: "supplier",
-  headerName: "Fournisseur",
-  width: 140,
-  renderCell: (params) => {
-    const supplier = params.value; // c'est l'objet complet supplier
-    return supplier ? supplier.name : "Non renseigné";
+});
+
+
+// La fonction qui génère le Chip
+const renderStatusChipEquip = (status) => {
+  // Si le statut est vide ou non défini, on ne rend rien ou un chip par défaut
+  if (!status) {
+    return <Chip label="Indéfini" size="small" />;
   }
-},
+  
+  const normalizedStatus = status.toLowerCase();
 
-    { field: "riskClass", headerName: "Classe de Risque", width: 125 },
-    { field: "amount", headerName: "Montant (dt)", width: 120, type: "number" },
-    { field: "lifespan", headerName: "Durée de vie (ans)", width: 110, type: "number" },
-{
-  field: "fromMinistere",
-  headerName: "Origine",
-  width: 100,
- renderCell: (params) => (
-  <span style={{ color: params.value ? "green" : "blue", fontWeight: "bold" }}>
-    {params.value ? "Ministère" : "Fournisseur"}
-  </span>
-)
-
-}
-,
- {
-      field: "status",
-      headerName: "Statut",
-      sortable: true,
-      width: 100,
-      renderCell: (params) => {
-        const status = params.value?.toLowerCase();
-    
-        let color = "#ccc";
-        let bgColor = "#eee";
-    
-        if (status === "en panne") {
-          color = "#fff";
-          bgColor = "#e53935"; // rouge
-        } else if (status === "en service") {
-          color = "#fff";
-          bgColor = "#43a047"; // vert
-        } else if (status === "en maintenance") {
-          color = "#fff";
-          bgColor = "#fb8c00"; // orange
-        } else if (status === "hors service") {
-          color = "#fff";
-          bgColor = "#757575"; // gris foncé
-        } else if (status === "en attente de réception") {
-          color = "#fff";
-          bgColor = "#1976d2"; // gris foncé
-        }
-    
-        return (
-            <span
-              style={{
-                padding: "6px 12px",
-                borderRadius: "40px",
-                backgroundColor: bgColor,
-                color: color,
-                fontWeight: "bold",
-                textTransform: "capitalize",
-                minWidth: "155px",  // largeur minimale uniforme
-                height: "35px",     // hauteur fixe
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {params.value}
-            </span>
-          );
-          
-      },
+  // Mapping pour les couleurs et les styles
+  const statusConfig = {
+    "en panne": { 
+      label: "En Panne", 
+      icon: <ReportIcon />,
+      // CORRECTION : On utilise les couleurs du thème "error"
+      sx: {
+        borderColor: 'error.main', // Bordure avec la couleur principale "error"
+        color: 'error.main',       // Texte avec la couleur principale "error"
+        backgroundColor: 'rgba(211, 47, 47, 0.1)' // Fond léger de la même couleur
+      } 
     },
-    
-    {
+    "en maintenance": { 
+      label: "En Maintenance", 
+      icon: <ErrorIcon />,
+       // On utilise les couleurs du thème "warning" pour la cohérence
+      sx: { 
+        borderColor: 'warning.main',
+        color: 'warning.main',
+        backgroundColor: 'rgba(237, 108, 2, 0.1)'
+      }
+    },
+    "en service": { 
+      label: "En Service", 
+      icon: <CheckCircleIcon />,
+      // CORRECTION : On utilise les couleurs du thème "success"
+      sx: {
+        borderColor: 'success.main', // Bordure avec la couleur principale "success"
+        color: 'success.main',       // Texte avec la couleur principale "success"
+        backgroundColor: 'rgba(46, 125, 50, 0.1)' // Fond léger de la même couleur
+      }
+    },
+    "hors service": { 
+      label: "Hors Service", 
+      icon: <DoNotDisturbOnIcon />,
+      sx: { 
+        borderColor: '#757575',
+        color: '#757575',
+        backgroundColor: '#f0f0f0'
+      }
+    },
+    "en attente de réception": { 
+      label: "En Attente de réception", 
+      icon: <HourglassTopIcon />,
+      sx: { 
+        borderColor: '#1976d2',
+        color: '#1976d2',
+        backgroundColor: '#e8f4fd'
+      }
+    },
+    default: {
+      label: status,
+      icon: <HelpOutlineIcon />,
+      sx: { 
+        borderColor: 'grey',
+        color: 'grey',
+        backgroundColor: '#fafafa'
+      }
+    }
+  };
+
+  const config = statusConfig[normalizedStatus] || statusConfig.default;
+
+  return (
+    <Chip
+      variant="outlined"
+      size="small"
+      icon={config.icon}
+      label={config.label}
+      sx={config.sx} 
+    />
+  );
+};
+ 
+
+
+ const columns = [
+        // On utilise flex pour que les colonnes s'adaptent à l'espace disponible.
+        // minWidth empêche les colonnes de devenir trop petites.
+        { field: "serialCode", headerName: "N° Série", minWidth: 110, flex: 0.8 },
+        { field: "nom", headerName: "Nom", minWidth: 180, flex: 1.5 },
+        {
+            field: "supplier",
+            headerName: "Fournisseur",
+            minWidth: 120,
+            flex: 1,
+      renderCell: (params) => {
+
+ const supplier = params.value; // c'est l'objet complet supplier
+return supplier ? supplier.name : "Non renseigné";
+}
+
+},
+        { field: "riskClass", headerName: "Risque", minWidth: 70, flex: 0.5 },
+        { field: "amount", headerName: "Montant", minWidth: 100, flex: 0.7, type: "number" },
+        { field: "lifespan", headerName: "Vie (ans)", minWidth: 80, flex: 0.6, type: "number" },
+        {
+            field: "brand", headerName: "Marque", minWidth: 100, flex: 0.8,
+renderCell: (params) => { const brand = params.value;
+return brand ? brand.name : "Non renseigné";
+
+ }        },
+        {
+            field: "fromMinistere",
+            headerName: "Origine",
+            minWidth: 90,
+            flex: 0.7,
+            renderCell: (params) => (
+                <Chip 
+                    label={params.value ? "Ministère" : "Hôpital"} 
+                    size="small"
+                    color={params.value ? "success" : "info"}
+                    variant="outlined"
+                />
+            )
+        },
+        {
+            field: "status",
+            headerName: "Statut",
+            minWidth: 130,
+            flex: 1,
+            renderCell: (params) => renderStatusChipEquip(params.value),
+            align: 'center',
+            headerAlign: 'center',
+        },
+        {
       
         field: "actions",
         headerName: "Actions",
@@ -214,9 +296,11 @@ const ManageEquipmentConsultListEquipment = () => {
     const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
     saveAs(data, 'equipment.xlsx');
   };
+
+
   return (
     <div style={{ display: "flex" }}>
-      <NavBar onToggle={setIsNavOpen} />
+      <NavBar onToggle={setIsNavOpen}  style={{display: 'flex', flexDirection: 'row'}}/>
       <div style={{ width: '90%', padding: '10px', marginTop: 60 }}>
     <Box
   sx={{
@@ -302,40 +386,43 @@ const ManageEquipmentConsultListEquipment = () => {
 
                 <div style={{ height: 470, width: "105.4%" , marginLeft:"-5%"}}>
 
-         <DataGrid
-                    rows={filteredEquipments}
-                    columns={columns}
-                    paginationMode="client"
-                    pageSize={5}
-                    disableSelectionOnClick
-                    loading={isLoading}
-                      sx={{
+ <DataGrid
+  rows={filteredEquipments}
+  columns={columns}
+  paginationMode="client"
+  pageSize={5}
+  disableSelectionOnClick
+  loading={isLoading}
+  sx={{
     width: '100%',
+    '& .MuiDataGrid-root': {
+      maxWidth: '100%',
+    },
     '& .MuiDataGrid-cell': {
       borderRight: '1px solid rgba(0, 0, 0, 0.1)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       textAlign: 'center',
-      fontSize: '0.8rem', // ↓ Réduction de taille de police
-      padding: '4px 8px', // ↓ Réduction du padding
+      fontSize: '0.75rem',
+      padding: '2px 6px',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      fontWeight:'bold',
     },
     '& .MuiDataGrid-columnHeaders': {
-      fontSize: '0.85rem',
-      height: 40,
+      fontSize: '0.75rem',
+      height: 36,
       whiteSpace: 'normal',
       lineHeight: 1.3,
       textAlign: 'center',
     },
-    '& .MuiDataGrid-root': {
-      maxWidth: '100%',
-    },
     '& .MuiDataGrid-row': {
-              borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-            },
-            
+      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+    },
   }}
-                  />
+/>
 
 
 </div>

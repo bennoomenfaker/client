@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { TextField, Button, IconButton } from "@mui/material";
+import { TextField, Button, IconButton, Divider, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -12,22 +12,18 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const [maintenancePlans, setMaintenancePlans] = useState([
-        { maintenanceDate: "", description: "", equipmentId }
-    ]);
+  const [maintenancePlans, setMaintenancePlans] = useState([
+  { maintenanceDate: "", description: "", frequency: "", equipmentId }
+]);
 
-    const handleChange = (event, index) => {
-        const { name, value } = event.target;
-        const updatedPlans = [...maintenancePlans];
-        updatedPlans[index][name] = value;
-        setMaintenancePlans(updatedPlans);
-    };
+
 
     const handleAddPlan = () => {
-        setMaintenancePlans([
-            ...maintenancePlans,
-            { maintenanceDate: "", description: "", equipmentId }
-        ]);
+       setMaintenancePlans([
+  ...maintenancePlans,
+  { maintenanceDate: "", description: "", frequency: "", equipmentId }
+]);
+
     };
 
     const handleRemovePlan = (indexToRemove) => {
@@ -48,7 +44,11 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
                 toast.warning("Tous les champs sont obligatoires !");
                 return false;
             }
-            
+            if (!plan.frequency) {
+  toast.warning("Veuillez sélectionner une fréquence !");
+  return false;
+}
+
             const planDate = new Date(maintenanceDate);
             if (planDate <= today) {
                 toast.warning("La date de maintenance doit être strictement future !");
@@ -58,32 +58,27 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
         return true;
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (!validateForm()) return;
+ const handleChange = (event, index) => {
+  const { name, value } = event.target; // name peut être 'maintenanceDate', 'description' ou 'frequency'
+  const updatedPlans = [...maintenancePlans];
+  updatedPlans[index][name] = value;  // mise à jour dynamique en fonction du champ modifié
+  setMaintenancePlans(updatedPlans);
+};
 
-        try {
-            // Parcours de chaque plan et envoi séparé
-            for (const plan of maintenancePlans) {
-                const maintenancePlanData = {
-                    maintenanceDate: plan.maintenanceDate,
-                    description: plan.description,
-                    equipmentId
-                };
+const handleSubmit = async (event) => {
+  event.preventDefault();
 
-                await dispatch(createMaintenancePlan({ 
-                    equipmentId, 
-                    maintenancePlanData // Envoi d'un plan à la fois avec ses données
-                }));
-            }
-            
-            toast.success("Tous les plans de maintenance ont été ajoutés !");
-            onComplete(); // Appel de la fonction de callback pour signaler la fin de la planification
-            navigate("/manage-equipment/equipments"); // Navigation vers la page de gestion des équipements
-        } catch (error) {
-            toast.error("Erreur lors de la planification.");
-        }
+  for (const plan of maintenancePlans) {
+    const maintenancePlanData = {
+      maintenanceDate: plan.maintenanceDate,
+      description: plan.description,
+      frequency: plan.frequency, // <-- valeur récupérée ici
+      equipmentId
     };
+
+    await dispatch(createMaintenancePlan({ equipmentId, maintenancePlanData }));
+  }
+};
 
     return (
         <form
@@ -107,14 +102,34 @@ const PlanMaintenanceForm = ({ equipmentId, onComplete }) => {
                         value={plan.description}
                         onChange={(event) => handleChange(event, index)}
                         fullWidth
+                          multiline
+                         minRows={3}
                     />
                     {maintenancePlans.length > 1 && (
                         <IconButton color="error" onClick={() => handleRemovePlan(index)} aria-label="Supprimer">
                             <DeleteIcon />
                         </IconButton>
                     )}
+                               <FormControl fullWidth>
+  <InputLabel>Fréquence</InputLabel>
+  <Select
+    label="Fréquence"
+    name="frequency"
+    value={plan.frequency}
+    onChange={(event) => handleChange(event, index)}
+    required
+  >
+    <MenuItem value="MENSUELLE">Mensuelle</MenuItem>
+    <MenuItem value="TRIMESTRIELLE">Trimestrielle</MenuItem>
+    <MenuItem value="SEMESTRIELLE">Semestrielle</MenuItem>
+    <MenuItem value="ANNUELLE">Annuelle</MenuItem>
+  </Select>
+</FormControl>
                 </div>
+                
             ))}
+
+
 
             <Button type="button" variant="outlined" color="secondary" onClick={handleAddPlan}>
                 Ajouter un autre plan

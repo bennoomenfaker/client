@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { Box, CircularProgress, IconButton, TextField, InputAdornment, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, ToggleButton, Grid, ToggleButtonGroup } from "@mui/material";
+import { Box, CircularProgress, IconButton, TextField, InputAdornment, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, ToggleButton, Grid, ToggleButtonGroup, Chip } from "@mui/material";
 import { deleteIncident, fetchIncidentsByHospital } from "../../redux/slices/incidentSlice";
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,10 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { checkSlaCompliance, resetSlaComplianceStatus } from "../../redux/slices/slaSlice";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
+import ReportIcon from '@mui/icons-material/Report'; // Pour "en panne"
+import ErrorIcon from '@mui/icons-material/Error'; // Pour "en maintenance"
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Pour "en service"
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline'; // Pour les statuts inconnus
 
 const NavBar = React.lazy(() => import("../../components/NavBar"));
 const CSVLink = React.lazy(() => import("react-csv").then((module) => ({ default: module.CSVLink })));
@@ -74,6 +77,104 @@ const ConsultListIncident = () => {
       <Typography variant="body1">Aucune information sur le SLA</Typography>
     );
   };
+
+  // 1. La fonction qui génère le Chip
+  const renderStatusChipIncident = (status) => {
+    // Si le statut est vide ou non défini, on ne rend rien ou un chip par défaut
+    if (!status) {
+      return <Chip label="Indéfini" size="small" />;
+    }
+    
+    const normalizedStatus = status.toLowerCase();
+  
+    // Mapping pour les couleurs et les styles
+    const statusConfig = {
+      "en attente": { 
+        label: "En Attente", 
+        icon: <ReportIcon />,
+        sx: { borderColor: '#d32f2f', color: '#d32f2f', backgroundColor: '#fdecea' } 
+      },
+      "en cours": { 
+        label: "En Cours", 
+        icon: <ErrorIcon />,
+        sx: { borderColor: '#ed6c02', color: '#ed6c02', backgroundColor: '#fff4e5' }
+      },
+      "résolu": { 
+        label: "Résolu", 
+        icon: <CheckCircleIcon />,
+        sx: { borderColor: '#2e7d32', color: '#2e7d32', backgroundColor: '#ebf9eb' }
+      },
+  
+      // AMÉLIORATION : Un cas par défaut pour les statuts imprévus
+      default: {
+        label: status,
+        icon: <HelpOutlineIcon />,
+        sx: { borderColor: 'grey', color: 'grey', backgroundColor: '#fafafa' }
+      }
+    };
+  
+    const config = statusConfig[normalizedStatus] || statusConfig.default;
+     return (
+      <Chip
+        variant="outlined"
+        size="small"
+        icon={config.icon}
+        label={config.label}
+        sx={config.sx} // On utilise la propriété `sx` pour le style dynamique
+      />
+    );
+  };
+
+    // 1. La fonction qui génère le Chip
+  const renderStatusChipSeverity = (status) => {
+    // Si le statut est vide ou non défini, on ne rend rien ou un chip par défaut
+    if (!status) {
+      return <Chip label="Indéfini" size="small" />;
+    }
+    
+    const normalizedStatus = status.toLowerCase();
+  
+    // Mapping pour les couleurs et les styles
+    const statusConfig = {
+      "mineur": { 
+        label: "MINEUR", 
+        icon: <ReportIcon />,
+                sx: { borderColor: '#ed6c02', color: '#ed6c02', backgroundColor: '#fff4e5' }
+
+      },
+      "majeur": { 
+        label: "MAJEUR", 
+        icon: <ErrorIcon />,
+                sx: { borderColor: '#d32f2f', color: '#d32f2f', backgroundColor: '#fdecea' } 
+
+      },
+      "modere": { 
+        label: "MODERE", 
+        icon: <CheckCircleIcon />,
+        sx: { borderColor: '#2e7d32', color: '#2e7d32', backgroundColor: '#ebf9eb' }
+      },
+  
+      // AMÉLIORATION : Un cas par défaut pour les statuts imprévus
+      default: {
+        label: status,
+        icon: <HelpOutlineIcon />,
+        sx: { borderColor: 'grey', color: 'grey', backgroundColor: '#fafafa' }
+      }
+    };
+  
+    const config = statusConfig[normalizedStatus] || statusConfig.default;
+     return (
+      <Chip
+        variant="outlined"
+        size="small"
+        icon={config.icon}
+        label={config.label}
+        sx={config.sx} // On utilise la propriété `sx` pour le style dynamique
+      />
+    );
+  };
+
+
   const filteredIncidents = useMemo(() => {
   const lowerSearch = searchText.toLowerCase();
 
@@ -138,8 +239,8 @@ const ConsultListIncident = () => {
       field: 'description', headerName: 'Description', flex: 2, cellClassName: 'left-align-cell'
     },
     { field: 'reportedAt', headerName: 'Date de déclaration', flex: 1.5 },
-    { field: 'status', headerName: 'Statut', flex: 0.75 },
-    { field: 'severity', headerName: 'Gravité', flex: 0.75 },
+    { field: 'status', headerName: 'Statut', flex: 0.90  ,     renderCell: (params) => renderStatusChipIncident(params.value)},
+    { field: 'severity', headerName: 'Gravité', flex: 0.75 ,renderCell: (params) => renderStatusChipSeverity(params.value)},
     { field: 'reporter', headerName: 'Déclaré par', flex: 1.5 },
     { field: 'service', headerName: 'Service', flex: 1.5 },
     {

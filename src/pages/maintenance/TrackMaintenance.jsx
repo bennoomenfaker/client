@@ -19,6 +19,7 @@ export default function TrackMaintenance() {
     const [search, setSearch] = useState('');
     const navigate = useNavigate();
     const [filteredMaintennace, setFilteredMaintenance] = useState([]);
+    console.log(maintenancePlans)
 
     useEffect(() => {
         dispatch(fetchAllMaintenancePlansByHospital(hospitalId));
@@ -81,6 +82,11 @@ export default function TrackMaintenance() {
                     {getSerialCodeByEquipmentId(params.row.equipmentId) || '-'}
                 </Box>
             )        },
+                {
+            field: 'frequency',
+            headerName: 'Fréquence',
+            width: 120,
+                },
        
         {
             field: 'actions',

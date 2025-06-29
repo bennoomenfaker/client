@@ -6,9 +6,17 @@ import { fetchEquipmentBySerial } from "../../../redux/slices/equipmentSlice";
 import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
 import { toast } from "react-toastify";
 import NavBar from "../../../components/NavBar";
+import { fetchSuppliersByHospital } from "../../../redux/slices/supplierSlice";
+import { Autocomplete } from "@mui/material";
 
 const ManageSparePartsCreateNewSpareParts = () => {
   const [isNavOpen, setIsNavOpen] = useState(true);
+    const hospitalId = sessionStorage.getItem('hospitalId');
+  const listSuppliers = useSelector((state) => state.supplier.suppliers);
+   useEffect(() => {
+     dispatch(fetchSuppliersByHospital(hospitalId));
+   }, [dispatch, hospitalId]);
+ 
   const [formData, setFormData] = useState({
     name: "",
     lifespan: "",
@@ -105,8 +113,21 @@ const ManageSparePartsCreateNewSpareParts = () => {
                 <TextField label="Durée de vie (années)" type="number" name="lifespan" value={formData.lifespan} onChange={handleChange} fullWidth required />
               </Grid>
               <Grid item xs={6}>
-                <TextField label="Fournisseur" name="supplier" value={formData.supplier} onChange={handleChange} fullWidth required />
-              </Grid>
+  <Autocomplete
+    options={listSuppliers}
+    getOptionLabel={(option) => option.name}
+    onChange={(event, newValue) => {
+      setFormData((prevData) => ({
+        ...prevData,
+        supplier: newValue ? newValue.name : ""
+      }));
+    }}
+    renderInput={(params) => (
+      <TextField {...params} label="Fournisseur" fullWidth required />
+    )}
+  />
+</Grid>
+
             </Grid>
 
             <Typography variant="h6" mt={3}>Lots</Typography>

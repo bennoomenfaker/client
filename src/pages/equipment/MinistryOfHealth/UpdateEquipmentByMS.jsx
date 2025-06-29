@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { fetchEMDNCodes } from "../../../redux/slices/emdnNomenclatureSlice";
 import { fetchHospitals } from "../../../redux/slices/hospitalSlice";
 import { fetchEquipmentBySerial, updateEquipment, updateMaintenancePlansForEquipment } from "../../../redux/slices/equipmentSlice";
-import { CircularProgress, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, Autocomplete, Stepper, Step, StepLabel, Paper, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox, FormControlLabel, FormLabel } from "@mui/material";
+import { CircularProgress, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, Autocomplete, Stepper, Step, StepLabel, Paper, Slide, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Checkbox, FormControlLabel } from "@mui/material";
 import { toast } from "react-toastify";
 import { fetchBrandsByHospital } from "../../../redux/slices/brandsSlice";
 import { fetchServicesByHospitalId } from "../../../redux/slices/hospitalServiceSlice";
@@ -43,13 +43,7 @@ const UpdateEquipmentByMS = () => {
     const [maintenancePlans, setMaintenancePlans] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [planIndexToRemove, setPlanIndexToRemove] = useState(null);
-    const [additionalDuration, setAdditionalDuration] = useState({ hours: 0, minutes: 0 });
-    const formatDuration = (totalMinutes) => {
-        const days = Math.floor(totalMinutes / (24 * 60));
-        const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-        const minutes = totalMinutes % 60;
-        return `${days}j ${hours}h ${minutes}min`;
-    };
+ 
 
 useEffect(() => {
   if (hospitalId) {
@@ -101,11 +95,12 @@ useEffect(() => {
             if (equipment.maintenancePlans && equipment.maintenancePlans.length > 0) {
                 const formattedPlans = equipment.maintenancePlans.map(plan => ({
                     ...plan,
-                    maintenanceDate: plan.maintenanceDate ? plan.maintenanceDate.split('T')[0] : ""
+                    maintenanceDate: plan.maintenanceDate ? plan.maintenanceDate.split('T')[0] : "",
+                     frequency: plan.frequency || ""
                 }));
                 setMaintenancePlans(formattedPlans);
             } else {
-                setMaintenancePlans([{ id: null, maintenanceDate: "", description: "", equipmentId: equipment.id }]);
+                setMaintenancePlans([{ id: null, maintenanceDate: "", description: "", frequency: "", equipmentId: equipment.id }]);
             }
 
         }
@@ -401,7 +396,7 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                 disabled={shouldDisableFields}
                             />
 
-                            {isAdmin && (
+                            {(isAdmin || isEngeering) && (
                                 <>
                                     <Autocomplete
                                         options={brands}
@@ -432,8 +427,53 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
     )}
 />
 
+ 
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Autocomplete
+                                        options={servicesByHospital}
+                                        getOptionLabel={(option) => option.name || ""}
+                                        value={servicesByHospital.find(service => service.id === equipmentFormData.serviceId) || null}
+                                        onChange={(event, newValue) => {
+                                            setEquipmentFormData({
+                                                ...equipmentFormData,
+                                                serviceId: newValue ? newValue.id : null,
+                                            });
+                                        }}
+                                        renderInput={(params) => <TextField {...params} label="Service" variant="outlined" />}
+                                    />
+                                    <FormControl key={`status-${equipmentFormData.status}`}>
+                                        <InputLabel>Status</InputLabel>
+                                        <Select
+                                            name="status"
+                                            value={equipmentFormData.status}
+                                            onChange={handleEquipmentChange}
+                                            required
+                                        >
+                                            {allStatus
+                                                .filter(statusItem => !(reception && statusItem === "en attente de réception")) // Filter based on reception
+                                                .map((statusItem) => (
+                                                    <MenuItem key={statusItem} value={statusItem}>{statusItem}</MenuItem>
+                                                ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {!reception && ( // Conditionally render the checkbox
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={reception}
+                                                    onChange={handleReceptionChange}
+                                                    name="reception"
+                                                />
+                                            }
+                                            label="Réception"
+                                        />
+                                    )}
+                                </>
+                            )}
+
+
+                                  {/*  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <TextField
                                             label="Nombre d'utilisations"
                                             type="number"
@@ -457,17 +497,17 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                         >
                                             +
                                         </Button>
-                                    </div>
+                                    </div> */}
 
-                                    <FormControl>
+                                    {/*<FormControl>
                                         <FormLabel>Durée totale utilisée</FormLabel>
                                         <TextField
                                             value={formatDuration(equipmentFormData.usageDuration || 0)}
                                             InputProps={{ readOnly: true }}
                                         />
-                                    </FormControl>
+                                    </FormControl> */}
 
-                                    <FormControl>
+                                    {/*   <FormControl>
                                         <FormLabel>Ajouter durée aujourd&apos;hui</FormLabel>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <TextField
@@ -516,50 +556,7 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                         onChange={handleEquipmentChange}
                                         fullWidth
                                     />
-
-
-                                    <Autocomplete
-                                        options={servicesByHospital}
-                                        getOptionLabel={(option) => option.name || ""}
-                                        value={servicesByHospital.find(service => service.id === equipmentFormData.serviceId) || null}
-                                        onChange={(event, newValue) => {
-                                            setEquipmentFormData({
-                                                ...equipmentFormData,
-                                                serviceId: newValue ? newValue.id : null,
-                                            });
-                                        }}
-                                        renderInput={(params) => <TextField {...params} label="Service" variant="outlined" />}
-                                    />
-                                    <FormControl key={`status-${equipmentFormData.status}`}>
-                                        <InputLabel>Status</InputLabel>
-                                        <Select
-                                            name="status"
-                                            value={equipmentFormData.status}
-                                            onChange={handleEquipmentChange}
-                                            required
-                                        >
-                                            {allStatus
-                                                .filter(statusItem => !(reception && statusItem === "en attente de réception")) // Filter based on reception
-                                                .map((statusItem) => (
-                                                    <MenuItem key={statusItem} value={statusItem}>{statusItem}</MenuItem>
-                                                ))}
-                                        </Select>
-                                    </FormControl>
-
-                                    {!reception && ( // Conditionally render the checkbox
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={reception}
-                                                    onChange={handleReceptionChange}
-                                                    name="reception"
-                                                />
-                                            }
-                                            label="Réception"
-                                        />
-                                    )}
-                                </>
-                            )}
+ */}
                             <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
                                 <Button type="submit" variant="contained" color="success">Modifier l’équipement</Button>
                                 <Button type="button" onClick={handleCancel}>Annuler</Button>
@@ -596,14 +593,33 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                             onChange={(event) => handleMaintenanceChange(event, index)}
                                             fullWidth
                                             disabled={shouldDisableFields}
+                                              multiline
+                                               minRows={3}
 
                                             style={{ marginBottom: "20px" }} // Marge spécifique entre les champs
                                         />
+                                            <FormControl fullWidth>
+      <InputLabel id={`frequency-label-${index}`}>Fréquence</InputLabel>
+      <Select
+        disabled={shouldDisableFields}
+        labelId={`frequency-label-${index}`}
+        name="frequency"
+        value={plan.frequency}
+        onChange={(event) => handleMaintenanceChange(event, index)}
+        required
+      >
+        <MenuItem value="MENSUELLE">Mensuelle</MenuItem>
+        <MenuItem value="TRIMESTRIELLE">Trimestrielle</MenuItem>
+        <MenuItem value="SEMESTRIELLE">Semestrielle</MenuItem>
+        <MenuItem value="ANNUELLE">Annuelle</MenuItem>
+      </Select>
+    </FormControl>
                                         {!shouldDisableFields && (  // Only show delete button if fields shouldn't be disabled
                                             <Button type="button" variant="outlined" color="error" onClick={() => handleRemovePlan(index)}>
                                                 Supprimer
                                             </Button>
                                         )}
+                                        
                                     </div>
                                 ))
                             ) : (

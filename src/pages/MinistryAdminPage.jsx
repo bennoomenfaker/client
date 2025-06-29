@@ -131,9 +131,7 @@ const MinistryAdminPage = () => {
     <Typography variant="subtitle1" gutterBottom>
       Équipements non reçus : {nonReceivedEquipment.length}
     </Typography>
-    <Typography variant="subtitle1" gutterBottom>
-      Incidents signalés : {hospitalIncidents.length}
-    </Typography>
+ 
 
     {selectedHospital && !isLoading && (
       <Box component="main">
