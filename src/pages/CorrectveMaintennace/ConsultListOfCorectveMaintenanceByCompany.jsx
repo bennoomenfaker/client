@@ -89,7 +89,7 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
             return searchMatch && statusMatch;
         });
     }, [rows, search, filterStatus]);
-
+    console.log(filteredCorrectiveMaintenances);
     const columns = [
         { field: 'serialCode', headerName: 'Code Série', width: 150 },
         { field: 'description', headerName: 'Description', width: 180, cellClassName: 'left-align-cell' },
@@ -100,7 +100,7 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
   renderCell: (params) => {
     let color = 'default';
     switch (params.value?.toLowerCase()) {
-      case 'en attente':
+      case 'planifié':
         color = '#FFA726'; // orange clair
         break;
       case 'en cours':
@@ -248,11 +248,12 @@ const ConsultListOfCorectveMaintenanceByCompany = () => {
                             <ToggleButton value="tous" aria-label="Tous">
                                 Tous
                             </ToggleButton>
-                            <ToggleButton value="en attente" aria-label="En attente">
-                                En attente
-                            </ToggleButton>
-                            <ToggleButton value="planifié" aria-label="Planifié">
-                                Planifié
+                          <ToggleButton value="planifié" aria-label="Planifié">
+    Planifié
+</ToggleButton>
+
+                            <ToggleButton value="en cours" aria-label="En Cours">
+                                En cours
                             </ToggleButton>
                             <ToggleButton value="terminé" aria-label="Terminé">
                                 Terminé

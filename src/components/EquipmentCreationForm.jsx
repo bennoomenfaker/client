@@ -252,14 +252,13 @@ const EquipmentCreationForm = ({ initialData, onSuccess }) => {
             <TextField
                 label={requiredLabel("Montant d'acquisition")}
                 name="amount"
-                type="text"
+                type="number"
                 value={formData.amount}
                 onChange={handleChange}
-                inputProps={{
-                    inputMode: 'numeric',
-                    pattern: '[0-9]*.?[0-9]*'
-                }}
-            />
+              
+helperText="Entrez le montant en millimes (exemple : 5000 = 5 DT, 50000 = 50 DT, 5000000 = 5000 DT)"
+/>
+
             
             <TextField
                 label={requiredLabel("Date de début de garantie")}

@@ -253,11 +253,16 @@ useEffect(() => {
             toast.error("Erreur lors de l'enregistrement des plans de maintenance.");
         }
     };
-    const handleCancel = () => {
-        isAdmin ? navigate("/manage-equipment/equipmentsOfHospital")
-            :
-            navigate("/manage-equipment/equipments")
+   const handleCancel = () => {
+    if (isCompany) {
+        navigate("/manage-maintenance/trackMaintenance");
+    } else if (isAdmin) {
+        navigate("/manage-equipment/equipmentsOfHospital");
+    } else {
+        navigate("/manage-equipment/equipments");
     }
+}
+
 
     const flattenEMDNHierarchy = (data) => {
         let flatList = [];
@@ -357,15 +362,18 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                             </FormControl>
 
 
-                            <TextField
-                                label="Montant d'acquisition"
-                                name="amount"
-                                type="number"
-                                value={equipmentFormData.amount}
-                                onChange={handleEquipmentChange}
-                                InputLabelProps={{ shrink: true }}
-                                disabled={shouldDisableFields}
-                            />
+                          <TextField
+  label="Montant d'acquisition"
+  name="amount"
+  type="number"
+  value={equipmentFormData.amount}
+  onChange={handleEquipmentChange}
+  InputLabelProps={{ shrink: true }}
+  disabled={shouldDisableFields}
+helperText="Entrez le montant en millimes (exemple : 5000 = 5 DT, 50000 = 50 DT, 5000000 = 5000 DT)"
+/>
+
+
                             <TextField
                                 label="Date d'acquisition"
                                 name="acquisitionDate"
@@ -396,7 +404,7 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                 disabled={shouldDisableFields}
                             />
 
-                            {(isAdmin || isEngeering) && (
+                            {(isAdmin || isEngeering ) && (
                                 <>
                                     <Autocomplete
                                         options={brands}
@@ -471,6 +479,26 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                     )}
                                 </>
                             )}
+                            {isCompany && (
+    <>
+            <FormControl key={`status-${equipmentFormData.status}`}>
+                                        <InputLabel>Status</InputLabel>
+                                        <Select
+                                            name="status"
+                                            value={equipmentFormData.status}
+                                            onChange={handleEquipmentChange}
+                                            required
+                                        >
+                                            {allStatus
+                                                .filter(statusItem => !(reception && statusItem === "en attente de réception")) // Filter based on reception
+                                                .map((statusItem) => (
+                                                    <MenuItem key={statusItem} value={statusItem}>{statusItem}</MenuItem>
+                                                ))}
+                                        </Select>
+                                    </FormControl>
+        
+    </>
+)}
 
 
                                   {/*  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -637,14 +665,15 @@ const shouldDisableFields = equipmentFormData.fromMinistere === true && !isMS;
                                 <Button type="button" onClick={() => setStep(0)}>
                                     Retour
                                 </Button>
-                                {shouldDisableFields && (<Button type="button" onClick={() => setStep(2)}>Passer</Button>)}
+                                {!isCompany &&(<> {shouldDisableFields && (<Button type="button" onClick={() => setStep(2)}>Passer</Button>)}</>)}
+                                {isCompany && (<> <Button onClick={handleCancel}>Terminer</Button></>)}
 
                             </div>
                         </form>
                     </Paper>
                 </Slide>
 
-                {(isAdmin || isCompany || isEngeering) && step > 1 && (
+                {(isAdmin  || isEngeering) && step > 1 && (
                     <>
                         {/* Slide pour Gérer le SLA */}
                         <Slide direction="left" in={step === 2} mountOnEnter unmountOnExit>

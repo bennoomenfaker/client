@@ -215,6 +215,8 @@ const SlaManagement = ({ equipment, setStep }) => {
           onChange={handleInputChange}
           fullWidth
           margin="normal"
+helperText="Entrez le montant en millimes (exemple : 5000 = 5 DT, 50000 = 50 DT, 5000000 = 5000 DT)"
+
         />
         <Select
           label="Société de maintenance"

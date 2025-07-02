@@ -234,15 +234,15 @@ const ConsultListIncident = () => {
   })), [filteredIncidents]);
 
   const columns = [
-    { field: 'equipment', headerName: 'Équipement', flex: 1 },
+    { field: 'equipment', headerName: 'Équipement', flex: 0.75 },
     {
       field: 'description', headerName: 'Description', flex: 2, cellClassName: 'left-align-cell'
     },
     { field: 'reportedAt', headerName: 'Date de déclaration', flex: 1.5 },
-    { field: 'status', headerName: 'Statut', flex: 0.90  ,     renderCell: (params) => renderStatusChipIncident(params.value)},
-    { field: 'severity', headerName: 'Gravité', flex: 0.75 ,renderCell: (params) => renderStatusChipSeverity(params.value)},
+    { field: 'status', headerName: 'Statut', flex: 1  , renderCell: (params) => renderStatusChipIncident(params.value)},
+    { field: 'severity', headerName: 'Gravité', flex: 1 ,renderCell: (params) => renderStatusChipSeverity(params.value)},
     { field: 'reporter', headerName: 'Déclaré par', flex: 1.5 },
-    { field: 'service', headerName: 'Service', flex: 1.5 },
+    { field: 'service', headerName: 'Service', flex: 1 },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -363,6 +363,7 @@ const ConsultListIncident = () => {
     // Reset the SLA compliance status when closing the dialog
     dispatch(resetSlaComplianceStatus());
     setOpenDialog(false);
+    setOpenDialog1(false)
   };
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(csvData);

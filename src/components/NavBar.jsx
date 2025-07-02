@@ -140,6 +140,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 export default function NavBar({ onToggle }) {
   const userInfo = useSelector((state) => state.auth.user);
+  const role = sessionStorage.getItem("role")
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [profileFetched, setProfileFetched] = useState(false);
@@ -165,11 +166,9 @@ export default function NavBar({ onToggle }) {
   const openAlert = Boolean(anchorElAlert);
   useEffect(() => {
     if (hospitalId) {
-      const x =dispatch(fetchAlertsByHospitalId(hospitalId));
-      console.log("hhh" , x)
+      dispatch(fetchAlertsByHospitalId(hospitalId));
     }
   }, [dispatch, hospitalId]);
-  console.log(alerts)
   useEffect(() => {
     initializeWebSocket(dispatch);
   }, [dispatch]);
@@ -327,9 +326,30 @@ export default function NavBar({ onToggle }) {
     navigate(`/manage-service/services`);
   };
 
-  const handleManageDashboard = () => {
-    navigate('/');
-  };
+
+const handleManageDashboard = () => {
+
+  switch (role) {
+    case "ROLE_MINISTRY_ADMIN":
+      navigate("/ministry-admin");
+      break;
+    case "ROLE_HOSPITAL_ADMIN":
+      navigate("/hospital-admin");
+      break;
+    case "ROLE_MAINTENANCE_ENGINEER":
+      navigate("/maintenance-engineer");
+      break;
+    case "ROLE_SERVICE_SUPERVISOR":
+      navigate("/service-supervisor");
+      break;
+    case "ROLE_MAINTENANCE_COMPANY":
+      navigate("/maintenance-company");
+      break;
+    default:
+      navigate("/401"); // Page non autorisée ou une autre page d'erreur
+  }
+};
+
   const handleConsultListUsers = () => {
     navigate('/manage-users/consult-users-by-ms');
   };

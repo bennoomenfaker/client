@@ -226,7 +226,7 @@ const AddEquipmentToHospital = () => {
 
             <Autocomplete
               options={flatEMDNList}
-              getOptionLabel={(option) => `${option.code} - ${option.nom}`}
+              getOptionLabel={(option) => `${option.code.split('.').pop()} - ${option.nom}`}
               value={flatEMDNList.find((opt) => opt.code.split(".").pop() === formData.emdnCode) || null}
               onChange={(event, newValue) => {
                 setFormData((prev) => ({
@@ -266,7 +266,10 @@ const AddEquipmentToHospital = () => {
               onChange={handleChange}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: 0 }}
-            />
+helperText="Entrez le montant en millimes (exemple : 5000 = 5 DT, 50000 = 50 DT, 5000000 = 5000 DT)"
+/>
+
+
 
             <TextField
               label="Date d'acquisition"
